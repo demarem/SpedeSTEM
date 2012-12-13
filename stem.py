@@ -24,7 +24,6 @@ def buildSpeciesDictAndList(file):
         numSpecies += 1
 
 def makeSpeciesGroups(speciesToCombine):
-
     groups = []
     groups.append(set(speciesToCombine[0]))
     for x, y in speciesToCombine:
@@ -49,8 +48,14 @@ def updateSpeciesDictAndList(groups):
             # build new name
             oldName = intToSpecies[member]
             newName = newName + oldName
-            newAlleles = newAlleles + "," + speciesToAlleles[oldName]
-        print newAlleles
+            if len(newAlleles) == 0:
+                newAlleles = speciesToAlleles[oldName]
+            else:
+                newAlleles = newAlleles + ", " + speciesToAlleles[oldName]
+            speciesToAlleles.pop(oldName)
+        speciesToAlleles[newName] = newAlleles
+        print speciesToAlleles
+
 
 def parseMatrix(file):
     strMatrix = []
