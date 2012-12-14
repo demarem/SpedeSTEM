@@ -2,12 +2,14 @@
 Description: Stem step-up speciation processor
 Created on Dec 13, 2012
 
-HOW TO RUN: in same directory, include: trees, settings
-WILL CREATE: results, trees.orig, settings.orig
+HOW TO RUN: in same directory, include: [origTreeFile], settings
+WILL CREATE: results, trees.orig
 '''
 
+import os
 import shutil
 import subprocess
+import StringIO
 
 def debug(message):
     print message
@@ -23,6 +25,9 @@ class StepUp:
         self.treeLine = 0  # line in original tree file
         self.output = ''
         self.numRuns = numRuns
+        self.origTreeFile = origTreeFile
+        if origTreeFile:
+            shutil.copyfile(origTreeFile, "trees.orig")
 
     def buildSpeciesDictAndList(self, file):
         ''' creates a dictionary of the form [species] : [list_of_alleles] and
@@ -55,7 +60,6 @@ class StepUp:
         # set numSpecies for this epoch
         self.numSpecies = len(self.intToSpecies)
 
-
     def makeSpeciesGroups(self, speciesToCombine):
         ''' creates a list of sets for each collapsed species '''
 
@@ -71,16 +75,17 @@ class StepUp:
                 elif y in groups[i]:
                     foundYGroup = i
                     groups[i].add(x)
-                else:
-                    groups.append(set(x, y))
+            if foundXGroup == -1 and foundYGroup == -1:
+                add = [x, y]
+                groups.append(set(add))
 
             # combine if a common pair spans two groups (transitive)
             if foundXGroup != -1 and foundYGroup != -1:
-                groups[foundXGroup] += groups[foundYGroup]
+                groups[foundXGroup] = groups[foundXGroup].union(groups[foundYGroup])
                 del groups[foundYGroup]
 
+        print groups
         return groups
-
 
     def updateSpeciesDictAndList(self, groups):
         for group in groups:
@@ -100,18 +105,20 @@ class StepUp:
                 self.speciesToAlleles.pop(oldName)
             self.speciesToAlleles[newName] = newAlleles
 
-
-    def parseMatrix(self, file):
+    def parseMatrix(self):
         strMatrix = []
         numSpecies = 0
+        buf = StringIO.StringIO(self.output)
         # process output into a list of strings
-        for line in file:
+        line = buf.readline()
+        while line:
             line = line.strip()
             if len(line) > 0 and line[0] == '[':
                 numSpecies += 1  # count the number of species
                 matrixRow = line.replace('[', ' ')
                 matrixRow = matrixRow.replace(']', ' ')
                 strMatrix.extend(matrixRow.split(' '))
+            line = buf.readline()
 
         dblMatrix = []
         for i in strMatrix:
@@ -119,7 +126,6 @@ class StepUp:
                 dblMatrix.append(float(i))
 
         return dblMatrix, numSpecies
-
 
     def findMinElements(self, matrix, numSpecies):
         # find all with min, store in list of tuples
@@ -147,7 +153,6 @@ class StepUp:
 
         return species
 
-
     def printNewSettings(self, file):
         numSpecies = 0
         self.intToSpecies.clear()
@@ -157,21 +162,24 @@ class StepUp:
             numSpecies += 1
             file.write('  ' + sp + ': ' + self.speciesToAlleles[sp] + '\n')
 
-    def outputTable(self, fileToParse=open("output", "r"), resultFile=open("results", "a")):
-        numOfSpecLine = ""
+    def outputTable(self, resultFile=open("results", "a")):
         logLikelihood = ""
         treeLine = ""
-        while True
-            line = fileToParse.readline()
+        buf = StringIO.StringIO(self.output)
+        resultFile.write(str(self.numSpecies - 1))
+        line = buf.readline()
+        while line:
             if "Species Tree" in line:
-                fileToParse.readline()
-                treeLine = fileToParse.readline()
-                resultFile.write(treeLine)
+                line = buf.readline()
+                treeLine = buf.readline().strip()
+                treeLine = treeLine.replace(';', '')
+                resultFile.write("; " + treeLine + "; ")
 
-            if "log likelihood" in line:
-                logLikelihood = line.split(":")[1].trim()
-                resultFile.write(logLikelihood)
+            elif "log likelihood" in line:
+                logLikelihood = line.split(":")[1].strip()
+                resultFile.write(logLikelihood + "\n")
                 break
+            line = buf.readline()
 
     def doStep(self):
         settings = open('settings', 'r')
@@ -179,14 +187,14 @@ class StepUp:
         settings.close()
 
         # call java stuff here
-        # os.system("java -jar stem.jar > output")
-        # os.system("cat output")
+#        os.system("java -jar stem.jar > output")
+#        os.system("cat output")
         self.output = subprocess.check_output(["java", "-jar", "stem.jar"])
         print self.output
 
-        output = open('output', 'r')
-        matrix, numSpecies = self.parseMatrix(output)
-        output.close()
+        self.outputTable()
+
+        matrix, numSpecies = self.parseMatrix()
 
         speciesToCombine = self.findMinElements(matrix, numSpecies)
 
@@ -202,7 +210,7 @@ class StepUp:
 
     def chopTree(self):
         newTreeFile = open('genetrees.tre', 'w')
-        origTreeFile = open('tree', 'r')
+        origTreeFile = open('trees.orig', 'r')
 
         # get to the correct line in 'tree' file
         for i in range(self.treeLine):
@@ -217,19 +225,19 @@ class StepUp:
 
     def run(self):
         for i in range(self.numRuns):
+            shutil.copyfile("settings", "settings.orig")
             self.chopTree()
             numSp = self.doStep()
-            while numSp > 2:
+            while numSp >= 2:
                 numSp = self.doStep()
+                print self.intToSpecies, self.speciesToAlleles
+            os.system("mv settings.orig settings")
 
 
 if __name__ == '__main__':
 
-    # copy files
-    shutil.copyfile("settings", "settings.orig")
-    shutil.copyfile("tree", "tree.orig")
-
     # execute one
-    run = StepUp()
+    # run = StepUp(origTreeFile='trees', numTrees=5, numRuns=100)
+    run = StepUp(origTreeFile='trees', numTrees=5, numRuns=5)
     run.run()
 
