@@ -1,23 +1,28 @@
 '''
 Description: Stem step-up speciation processor
 Created on Dec 13, 2012
+
+HOW TO RUN: in same directory, include: trees, settings
+WILL CREATE: results, trees.orig, settings.orig
 '''
 
-import os
 import shutil
-import re
+import subprocess
 
 def debug(message):
     print message
 
 class StepUp:
-    def __init__(self, origTreeFile=None, numTrees=None):
+    def __init__(self, origTreeFile=None, numTrees=None, numRuns=1):
         self.speciesToAlleles = {}
         self.intToSpecies = {}  # enum of int to species
         self.settingsHeader = ""  # set first time settings is read
         self.numSpecies = 0  # for current epoch
         self.treeFile = origTreeFile  # extract numTrees from this file
         self.numTrees = numTrees
+        self.treeLine = 0  # line in original tree file
+        self.output = ''
+        self.numRuns = numRuns
 
     def buildSpeciesDictAndList(self, file):
         ''' creates a dictionary of the form [species] : [list_of_alleles] and
@@ -49,6 +54,7 @@ class StepUp:
 
         # set numSpecies for this epoch
         self.numSpecies = len(self.intToSpecies)
+
 
     def makeSpeciesGroups(self, speciesToCombine):
         ''' creates a list of sets for each collapsed species '''
@@ -151,14 +157,17 @@ class StepUp:
             numSpecies += 1
             file.write('  ' + sp + ': ' + self.speciesToAlleles[sp] + '\n')
 
+
     def doStep(self):
         settings = open('settings', 'r')
         self.buildSpeciesDictAndList(settings)
         settings.close()
 
         # call java stuff here
-        os.system("java -jar stem.jar > output")
-        os.system("cat output")
+        # os.system("java -jar stem.jar > output")
+        # os.system("cat output")
+        self.output = subprocess.check_output(["java", "-jar", "stem.jar"])
+        print self.output
 
         output = open('output', 'r')
         matrix, numSpecies = self.parseMatrix(output)
@@ -176,18 +185,36 @@ class StepUp:
 
         return len(self.intToSpecies)
 
+    def chopTree(self):
+        newTreeFile = open('genetrees.tre', 'w')
+        origTreeFile = open('tree', 'r')
+
+        # get to the correct line in 'tree' file
+        for i in range(self.treeLine):
+            origTreeFile.readline()
+        # add the next numTrees lines and put them into genetrees.tre
+        for i in range(self.numTrees):
+            newTreeFile.write(origTreeFile.readline())
+
+        self.treeLine += self.numTrees
+        newTreeFile.close()
+        origTreeFile.close()
+
     def run(self):
-        numSp = self.doStep()
-        while numSp > 2:
+        for i in range(self.numRuns):
+            self.chopTree()
             numSp = self.doStep()
+            while numSp > 2:
+                numSp = self.doStep()
+
 
 if __name__ == '__main__':
 
     # copy files
     shutil.copyfile("settings", "settings.orig")
-    shutil.copyfile("", dst)
+    shutil.copyfile("tree", "tree.orig")
 
-    # execute once
+    # execute one
     run = StepUp()
     run.run()
 
