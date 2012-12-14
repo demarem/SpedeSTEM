@@ -11,26 +11,29 @@ def debug(message):
     print message
 
 class StepUp:
-    def __init__(self):
+    def __init__(self, origTreeFile=None, numTrees=None):
         self.speciesToAlleles = {}
         self.intToSpecies = {}  # enum of int to species
-        self.settingsHeader = ""
-
-
+        self.settingsHeader = ""  # set first time settings is read
+        self.numSpecies = 0  # for current epoch
+        self.treeFile = origTreeFile  # extract numTrees from this file
+        self.numTrees = numTrees
 
     def buildSpeciesDictAndList(self, file):
-        ''' creates a dictionary of the form [species] : [list_of_alleles] '''
+        ''' creates a dictionary of the form [species] : [list_of_alleles] and
+        dict of int to species for enumeration list from 'settings' file '''
 
-        if self.settingsHeader == '':
+        if self.settingsHeader == '':  # settings header not yet set
             line = file.readline()
             while line.strip() != "species:":
                 self.settingsHeader = self.settingsHeader + line
                 line = file.readline()
             self.settingsHeader = self.settingsHeader + line
-        else:
+        else:  # settings header already set, ignore it
             while file.readline().strip() != "species:":
-                None  # do nothings
+                pass  # do nothings
 
+        # build both dicts
         numSpecies = 0
         for line in file:
             line = line.strip()
@@ -44,20 +47,32 @@ class StepUp:
                 self.intToSpecies[numSpecies] = sp
             numSpecies += 1
 
+        # set numSpecies for this epoch
+        self.numSpecies = len(self.intToSpecies)
+
     def makeSpeciesGroups(self, speciesToCombine):
+        ''' creates a list of sets for each collapsed species '''
+
         groups = []
-        groups.append(set(speciesToCombine[0]))
+        groups.append(set(speciesToCombine[0]))  # add first sp to first group
         for x, y in speciesToCombine:
+            foundXGroup = -1
+            foundYGroup = -1
             for i in range(len(groups)):
                 if x in groups[i]:
+                    foundXGroup = i
                     groups[i].add(y)
                 elif y in groups[i]:
+                    foundYGroup = i
                     groups[i].add(x)
                 else:
                     groups.append(set(x, y))
 
-        # TODO: might need to look through the groups to verify that they don't share common
-        # members
+            # combine if a common pair spans two groups (transitive)
+            if foundXGroup != -1 and foundYGroup != -1:
+                groups[foundXGroup] += groups[foundYGroup]
+                del groups[foundYGroup]
+
         return groups
 
 
@@ -68,7 +83,10 @@ class StepUp:
             for member in group:
                 # build new name
                 oldName = self.intToSpecies[member]
-                newName = newName + oldName
+                if newName == "":
+                    newName = oldName
+                else:
+                    newName = newName + '_' + oldName
                 if len(newAlleles) == 0:
                     newAlleles = self.speciesToAlleles[oldName]
                 else:
@@ -132,11 +150,8 @@ class StepUp:
             self.intToSpecies[numSpecies] = sp
             numSpecies += 1
             file.write('  ' + sp + ': ' + self.speciesToAlleles[sp] + '\n')
-        print self.intToSpecies
-        print self.speciesToAlleles
-        print self.settingsHeader
 
-    def step(self):
+    def doStep(self):
         settings = open('settings', 'r')
         self.buildSpeciesDictAndList(settings)
         settings.close()
@@ -161,20 +176,18 @@ class StepUp:
 
         return len(self.intToSpecies)
 
+    def run(self):
+        numSp = self.doStep()
+        while numSp > 2:
+            numSp = self.doStep()
 
 if __name__ == '__main__':
 
-    # copy file to preserve settings
+    # copy files
     shutil.copyfile("settings", "settings.orig")
+    shutil.copyfile("", dst)
 
     # execute once
     run = StepUp()
-
-    run.step()
-    run.step()
-    run.step()
-
-#    numSp = run.stepUp()
-#    while numSp > 2:
-#        numSp = run.stepUp()
+    run.run()
 
