@@ -157,6 +157,21 @@ class StepUp:
             numSpecies += 1
             file.write('  ' + sp + ': ' + self.speciesToAlleles[sp] + '\n')
 
+    def outputTable(self, fileToParse=open("output", "r"), resultFile=open("results", "a")):
+        numOfSpecLine = ""
+        logLikelihood = ""
+        treeLine = ""
+        while True
+            line = fileToParse.readline()
+            if "Species Tree" in line:
+                fileToParse.readline()
+                treeLine = fileToParse.readline()
+                resultFile.write(treeLine)
+
+            if "log likelihood" in line:
+                logLikelihood = line.split(":")[1].trim()
+                resultFile.write(logLikelihood)
+                break
 
     def doStep(self):
         settings = open('settings', 'r')
