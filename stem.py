@@ -225,19 +225,22 @@ class StepUp:
 
     def run(self):
         for i in range(self.numRuns):
+            print "!!!!!!!!!!!!!!!!!!!!!New Run!!!!!!!!!!!!!!!!!!!!!!!!"
             shutil.copyfile("settings", "settings.orig")
             self.chopTree()
             numSp = self.doStep()
             while numSp >= 2:
                 numSp = self.doStep()
                 print self.intToSpecies, self.speciesToAlleles
+            self.numSpecies = ""
+            self.intToSpecies.clear()
+            self.speciesToAlleles.clear()
             os.system("mv settings.orig settings")
 
 
 if __name__ == '__main__':
 
     # execute one
-    # run = StepUp(origTreeFile='trees', numTrees=5, numRuns=100)
     run = StepUp(origTreeFile='trees', numTrees=5, numRuns=5)
     run.run()
 
