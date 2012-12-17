@@ -2,6 +2,7 @@
 Description: Stem step-up speciation processor
 Created on Dec 13, 2012
 
+Set 
 HOW TO RUN: in same directory, include: [origTreeFile], settings
 WILL CREATE: results, trees.orig
 '''
@@ -28,6 +29,7 @@ class StepUp:
         self.origTreeFile = origTreeFile
         if origTreeFile:
             shutil.copyfile(origTreeFile, "trees.orig")
+        self.runNumber = 0
 
     def buildSpeciesDictAndList(self, file):
         ''' creates a dictionary of the form [species] : [list_of_alleles] and
@@ -97,7 +99,7 @@ class StepUp:
                 if newName == "":
                     newName = oldName
                 else:
-                    newName = newName + '_' + oldName
+                    newName = newName + oldName
                 if len(newAlleles) == 0:
                     newAlleles = self.speciesToAlleles[oldName]
                 else:
@@ -190,7 +192,7 @@ class StepUp:
 #        os.system("java -jar stem.jar > output")
 #        os.system("cat output")
         self.output = subprocess.check_output(["java", "-jar", "stem.jar"])
-        print self.output
+ #       print self.output
 
         self.outputTable()
 
@@ -225,13 +227,19 @@ class StepUp:
 
     def run(self):
         for i in range(self.numRuns):
-            print "!!!!!!!!!!!!!!!!!!!!!New Run!!!!!!!!!!!!!!!!!!!!!!!!"
+            self.runNumber += 1
             shutil.copyfile("settings", "settings.orig")
             self.chopTree()
             numSp = self.doStep()
+            numIt = 1
             while numSp >= 2:
+                numIt += 1
                 numSp = self.doStep()
-                print self.intToSpecies, self.speciesToAlleles
+                print "intToSpecies: " + str(self.intToSpecies)
+                print "speciesToAlleles: " + str(self.speciesToAlleles)
+                print "Run Number: " + str(self.runNumber)
+                print "NumSpecies: " + str(self.numSpecies)
+                print "IterationNum: " + str(numIt)
             self.numSpecies = ""
             self.intToSpecies.clear()
             self.speciesToAlleles.clear()
@@ -241,6 +249,8 @@ class StepUp:
 if __name__ == '__main__':
 
     # execute one
-    run = StepUp(origTreeFile='trees', numTrees=5, numRuns=5)
+    for x in {15, 20}:
+        run = StepUp(origTreeFile='trees', numTrees=x, numRuns=10)
+        os.system("mv results results." + str(x))
     run.run()
 
