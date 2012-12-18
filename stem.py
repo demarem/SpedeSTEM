@@ -165,7 +165,7 @@ class StepUp:
             file.write('  ' + sp + ': ' + self.speciesToAlleles[sp] + '\n')
 
     def outputTable(self):
-        resultFile = open("results", "a")
+        resultFile = open("results." + self.origTreeFile + '.' + str(self.numTrees), "a")
         logLikelihood = ""
         treeLine = ""
         buf = StringIO.StringIO(self.output)
@@ -256,7 +256,6 @@ if __name__ == '__main__':
 
     for tree in {"gt2.deep.tre", "gt2.med.tre", "gt2.shallow.tre"}:
         for x in {5, 10, 15, 20}:
-            run = StepUp(origTreeFile=tree, numTrees=x, numRuns=5)
+            run = StepUp(origTreeFile=tree, numTrees=x, numRuns=1)
             run.run()
-            os.system("mv results results." + tree + '.' + str(x))
 
