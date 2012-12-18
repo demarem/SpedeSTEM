@@ -183,16 +183,18 @@ class StepUp:
                 break
             line = buf.readline()
 
+        resultFile.close()
+
     def doStep(self):
         settings = open('settings', 'r')
         self.buildSpeciesDictAndList(settings)
         settings.close()
 
-        # call java stuff here
+#       call java stuff here
 #        os.system("java -jar stem.jar > output")
 #        os.system("cat output")
         self.output = subprocess.check_output(["java", "-jar", "stem.jar"])
- #       print self.output
+#       print self.output
 
         self.outputTable()
 
@@ -231,10 +233,13 @@ class StepUp:
             shutil.copyfile("settings", "settings.orig")
             self.chopTree()
             numSp = self.doStep()
+            outs = open(self.origTreeFile + ".outputs", 'a')
+            outs.write(self.output)
             numIt = 1
             while numSp >= 2:
                 numIt += 1
                 numSp = self.doStep()
+                outs.write(self.output)
                 print "intToSpecies: " + str(self.intToSpecies)
                 print "speciesToAlleles: " + str(self.speciesToAlleles)
                 print "Run Number: " + str(self.runNumber)
@@ -248,9 +253,9 @@ class StepUp:
 
 if __name__ == '__main__':
 
-    # execute one
-    for x in {5, 10, 15, 20}:
-        run = StepUp(origTreeFile='trees', numTrees=x, numRuns=10)
-        os.system("mv results results." + str(x))
-        run.run()
+    for tree in {"gt2.deep.tre", "gt2.med.tre", "gt2.shallow.tre"}:
+        for x in {5, 10, 15, 20}:
+            run = StepUp(origTreeFile=tree, numTrees=x, numRuns=1)
+            run.run()
+            os.system("mv results results." + tree + '.' + str(x))
 
