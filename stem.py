@@ -249,8 +249,8 @@ class StepUp:
 if __name__ == '__main__':
 
     # execute one
-    for x in {15, 20}:
+    for x in {5, 10, 15, 20}:
         run = StepUp(origTreeFile='trees', numTrees=x, numRuns=10)
         os.system("mv results results." + str(x))
-    run.run()
+        run.run()
 
