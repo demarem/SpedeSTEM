@@ -1,53 +1,41 @@
-'''
-Description: Stem step-up speciation processor
-Created on Dec 13, 2012
 
-Set 
-HOW TO RUN: in same directory, include: [origTreeFile], settings
-WILL CREATE: results, trees.orig
-'''
+# TODO: save settings
 
-import os
-import shutil
-import subprocess
+import re
 import StringIO
+import subprocess
 
 def debug(message):
-    print message
+    print str(message)
 
-class StepUp:
-    def __init__(self, origTreeFile=None, numTrees=None, numRuns=1):
-        self.speciesToAlleles = {}
-        self.intToSpecies = {}  # enum of int to species
+class stemTree:
+    def __init__(self, settings):
+        self.speciesToAlleles = {}  # persistent list of species
         self.settingsHeader = ""  # set first time settings is read
         self.numSpecies = 0  # for current epoch
-        self.treeFile = origTreeFile  # extract numTrees from this file
-        self.numTrees = numTrees
-        self.treeLine = 0  # line in original tree file
-        self.output = ''
-        self.numRuns = numRuns
-        self.origTreeFile = origTreeFile
-        if origTreeFile:
-            shutil.copyfile(origTreeFile, "trees.orig")
-        self.runNumber = 0
 
-    def buildSpeciesDictAndList(self, file):
-        ''' creates a dictionary of the form [species] : [list_of_alleles] and
-        dict of int to species for enumeration list from 'settings' file '''
+        # build dict the first time, don't need this any other time
+        settingsFile = open(settings, 'r')
+        self.buildSpeciesDict(settingsFile)
+        settingsFile.close()
+
+    def buildSpeciesDict(self, settingsFile):
+        ''' creates a dictionary of the form [species] : [list_of_alleles]
+        from settings file'''
 
         if self.settingsHeader == '':  # settings header not yet set
-            line = file.readline()
+            line = settingsFile.readline()
             while line.strip() != "species:":
                 self.settingsHeader = self.settingsHeader + line
-                line = file.readline()
+                line = settingsFile.readline()
             self.settingsHeader = self.settingsHeader + line
         else:  # settings header already set, ignore it
-            while file.readline().strip() != "species:":
+            while settingsFile.readline().strip() != "species:":
                 pass  # do nothings
 
-        # build both dicts
+        # build dict for sp : alleles part of settings
         numSpecies = 0
-        for line in file:
+        for line in settingsFile:
             line = line.strip()
             if len(line) > 0:
                 parts = line.split(':')
@@ -56,206 +44,113 @@ class StepUp:
                 sp = sp.strip()
                 alleles = alleles.strip()
                 self.speciesToAlleles[sp] = alleles
-                self.intToSpecies[numSpecies] = sp
             numSpecies += 1
 
         # set numSpecies for this epoch
-        self.numSpecies = len(self.intToSpecies)
+        self.numSpecies = numSpecies
+        debug("number of species: " + str(numSpecies))
 
-    def makeSpeciesGroups(self, speciesToCombine):
-        ''' creates a list of sets for each collapsed species '''
+    def findMinSisters(self, tree):
+        # get a list of the sisters in tree
+        sisterFinder = r"\([^()]*\)"
+        sisters = re.findall(sisterFinder, tree)
 
-        groups = []
-        groups.append(set(speciesToCombine[0]))  # add first sp to first group
-        for x, y in speciesToCombine:
-            foundXGroup = -1
-            foundYGroup = -1
-            for i in range(len(groups)):
-                if x in groups[i]:
-                    foundXGroup = i
-                    groups[i].add(y)
-                elif y in groups[i]:
-                    foundYGroup = i
-                    groups[i].add(x)
-            if foundXGroup == -1 and foundYGroup == -1:
-                add = [x, y]
-                groups.append(set(add))
+        # capture the three parts of each sister, groups(1-3): al1, weight, al2
+        parseSister = r"\((.+):(\d*.\d+),(.*):.*\)"
+        m = re.match(parseSister, sisters[0])
+        minWeight = float(m.group(2))
+        minSisters = (m.group(1), m.group(3))
+        for sis in sisters:
+            m = re.match(parseSister, sis)
+            testWeight = float(m.group(2))
+            if testWeight < minWeight:
+                minSisters = (m.group(1), m.group(3))
 
-            # combine if a common pair spans two groups (transitive)
-            if foundXGroup != -1 and foundYGroup != -1:
-                groups[foundXGroup] = groups[foundXGroup].union(groups[foundYGroup])
-                del groups[foundYGroup]
+        debug(minSisters)
+        return minSisters
 
-        print groups
-        return groups
+    def updateSpeciesDict(self, minSisters):
+        # sisters to be combined
+        sis_1 = minSisters[0]
+        sis_2 = minSisters[1]
 
-    def updateSpeciesDictAndList(self, groups):
-        for group in groups:
-            newName = ""
-            newAlleles = ""
-            for member in group:
-                # build new name
-                oldName = self.intToSpecies[member]
-                if newName == "":
-                    newName = oldName
-                else:
-                    newName = newName + oldName
-                if len(newAlleles) == 0:
-                    newAlleles = self.speciesToAlleles[oldName]
-                else:
-                    newAlleles = newAlleles + ", " + self.speciesToAlleles[oldName]
-                self.speciesToAlleles.pop(oldName)
-            self.speciesToAlleles[newName] = newAlleles
+        # alleles to be combined
+        alleles_1 = self.speciesToAlleles[sis_1]
+        alleles_2 = self.speciesToAlleles[sis_2]
 
-    def parseMatrix(self):
-        strMatrix = []
-        numSpecies = 0
-        buf = StringIO.StringIO(self.output)
-        # process output into a list of strings
-        line = buf.readline()
-        while line:
-            line = line.strip()
-            if len(line) > 0 and line[0] == '[':
-                numSpecies += 1  # count the number of species
-                matrixRow = line.replace('[', ' ')
-                matrixRow = matrixRow.replace(']', ' ')
-                strMatrix.extend(matrixRow.split(' '))
-            line = buf.readline()
+        # make new species with both species and both sets of alleles
+        self.speciesToAlleles[minSisters[0] + minSisters[1]] = \
+            alleles_1 + ", " + alleles_2
 
-        dblMatrix = []
-        for i in strMatrix:
-            if i not in ('', '\n'):
-                dblMatrix.append(float(i))
+        debug("Added new combined species: " + str(self.speciesToAlleles))
 
-        return dblMatrix, numSpecies
+        # delete both old species
+        del self.speciesToAlleles[sis_1]
+        del self.speciesToAlleles[sis_2]
 
-    def findMinElements(self, matrix, numSpecies):
-        # find all with min, store in list of tuples
-        row = 0
-        col = 0
-        minFound = matrix[1]
-        for x in matrix:
-            if col > row and x < minFound:
-                minFound = x
-            col += 1
-            if col > numSpecies - 1:
-                col = 0
-                row += 1
+        debug("Removed old species: " + str(self.speciesToAlleles))
 
-        row = 0
-        col = 0
-        species = []
-        for x in matrix:
-            if x == minFound:  # maybe should be some tolerance
-                species.append((row, col))
-            col += 1
-            if col > numSpecies - 1:
-                col = 0
-                row += 1
+        self.numSpecies = len(self.speciesToAlleles)
+        debug("number of species: " + str(self.numSpecies))
 
-        return species
-
-    def printNewSettings(self, file):
-        numSpecies = 0
-        self.intToSpecies.clear()
-        file.write(self.settingsHeader)
-        for sp in self.speciesToAlleles:
-            self.intToSpecies[numSpecies] = sp
-            numSpecies += 1
-            file.write('  ' + sp + ': ' + self.speciesToAlleles[sp] + '\n')
-
-    def outputTable(self):
-        resultFile = open("results." + self.origTreeFile + '.' + str(self.numTrees), "a")
+    def captureTreeAndAppendResults(self, outputStr, resultsFile):
         logLikelihood = ""
         treeLine = ""
-        buf = StringIO.StringIO(self.output)
-        resultFile.write(str(self.numSpecies - 1))
+        buf = StringIO.StringIO(outputStr)
+        resultsFile.write(str(self.numSpecies - 1))
         line = buf.readline()
         while line:
             if "Species Tree" in line:
                 line = buf.readline()
                 treeLine = buf.readline().strip()
                 treeLine = treeLine.replace(';', '')
-                resultFile.write("; " + treeLine + "; ")
+                resultsFile.write("; " + treeLine + "; ")
 
             elif "log likelihood" in line:
                 logLikelihood = line.split(":")[1].strip()
-                resultFile.write(logLikelihood + "\n")
+                resultsFile.write(logLikelihood + "\n")
                 break
             line = buf.readline()
 
-        resultFile.close()
+        return treeLine
 
-    def doStep(self):
-        settings = open('settings', 'r')
-        self.buildSpeciesDictAndList(settings)
-        settings.close()
+    def printSettings(self, settingsFile):
+        settingsFile.write(self.settingsHeader)
+        for sp in self.speciesToAlleles:
+            settingsFile.write('  ' + sp + ': ' + self.speciesToAlleles[sp] + '\n')
 
-#       call java stuff here
-#        os.system("java -jar stem.jar > output")
-#        os.system("cat output")
-        self.output = subprocess.check_output(["java", "-jar", "stem.jar"])
-#       print self.output
+    def doOneStep(self, settings, jarFile, results):
+        ''' mutates self.speciesToAlleles '''
 
-        self.outputTable()
+        # call java
+        output = subprocess.check_output(["java", "-jar", jarFile])
+        debug(output)
 
-        matrix, numSpecies = self.parseMatrix()
+        # find tree and print the results of the last run
+        resultsFile = open(results, 'a')
+        tree = self.captureTreeAndAppendResults(output, resultsFile)
+        resultsFile.close()
 
-        speciesToCombine = self.findMinElements(matrix, numSpecies)
+        # determine the two sister species to collapse
+        minSisters = self.findMinSisters(tree)
 
-        groups = self.makeSpeciesGroups(speciesToCombine)
+        # use the two sister species to collapse the species in dict
+        self.updateSpeciesDict(minSisters)
 
-        self.updateSpeciesDictAndList(groups)
+        # print the new settings file
+        settingsFile = open(settings, 'w')
+        self.printSettings(settingsFile)
+        settingsFile.close()
 
-        newSettings = open('settings', 'w')
-        self.printNewSettings(newSettings)
-        newSettings.close()
+        return self.numSpecies
 
-        return len(self.intToSpecies)
+    def doMaxSteps(self, settings, jarFile, results):
+        ''' mutates self.speciesToAlleles '''
 
-    def chopTree(self):
-        newTreeFile = open('genetrees.tre', 'w')
-        origTreeFile = open('trees.orig', 'r')
-
-        # get to the correct line in 'tree' file
-        for i in range(self.treeLine):
-            origTreeFile.readline()
-        # add the next numTrees lines and put them into genetrees.tre
-        for i in range(self.numTrees):
-            newTreeFile.write(origTreeFile.readline())
-
-        self.treeLine += self.numTrees
-        newTreeFile.close()
-        origTreeFile.close()
-
-    def run(self):
-        for i in range(self.numRuns):
-            self.runNumber += 1
-            shutil.copyfile("settings", "settings.orig")
-            self.chopTree()
-            numSp = self.doStep()
-            outs = open(self.origTreeFile + ".outputs", 'a')
-            outs.write(self.output)
-            numIt = 1
-            while numSp >= 2:
-                numIt += 1
-                numSp = self.doStep()
-                outs.write(self.output)
-                print "intToSpecies: " + str(self.intToSpecies)
-                print "speciesToAlleles: " + str(self.speciesToAlleles)
-                print "Run Number: " + str(self.runNumber)
-                print "NumSpecies: " + str(self.numSpecies)
-                print "IterationNum: " + str(numIt)
-            self.numSpecies = ""
-            self.intToSpecies.clear()
-            self.speciesToAlleles.clear()
-            os.system("mv settings.orig settings")
-
+        numRemaining = self.doOneStep(settings, jarFile, results)
+        while numRemaining > 1:
+            numRemaining = self.doOneStep(settings, jarFile, results)
 
 if __name__ == '__main__':
-
-    for tree in {"gt2.deep.tre", "gt2.med.tre", "gt2.shallow.tre"}:
-        for x in {5, 10, 15, 20}:
-            run = StepUp(origTreeFile=tree, numTrees=x, numRuns=5)
-            run.run()
-
+    stepper = stemTree('settings')
+    stepper.doMaxSteps('settings', 'stem.jar', 'results')
