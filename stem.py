@@ -1,18 +1,22 @@
-
-# TODO: save settings
+# TODO: save settings, make iterable for testing
 
 import re
 import StringIO
 import subprocess
+import shutil
+import os
 
 def debug(message):
     print str(message)
 
 class stemTree:
-    def __init__(self, settings):
+    def __init__(self, settings='settings'):
         self.speciesToAlleles = {}  # persistent list of species
+        self.initialSpeciesToAlleles = {}
         self.settingsHeader = ""  # set first time settings is read
         self.numSpecies = 0  # for current epoch
+        self.initialSpecies = 0
+        self.treeLine = 0  # the current line we're looking at in trees
 
         # build dict the first time, don't need this any other time
         settingsFile = open(settings, 'r')
@@ -50,6 +54,13 @@ class stemTree:
         self.numSpecies = numSpecies
         debug("number of species: " + str(numSpecies))
 
+        if self.initialSpecies == 0:
+            self.initialSpecies = self.numSpecies
+
+        if self.initialSpeciesToAlleles == {}:
+            self.initialSpeciesToAlleles = self.speciesToAlleles.copy()
+            debug("Setting Initial speciesToAlleles To: " + str(self.initialSpeciesToAlleles))
+
     def findMinSisters(self, tree):
         # get a list of the sisters in tree
         sisterFinder = r"\([^()]*\)"
@@ -66,7 +77,7 @@ class stemTree:
             if testWeight < minWeight:
                 minSisters = (m.group(1), m.group(3))
 
-        debug(minSisters)
+        debug("minSisters: " + str(minSisters))
         return minSisters
 
     def updateSpeciesDict(self, minSisters):
@@ -119,11 +130,14 @@ class stemTree:
         for sp in self.speciesToAlleles:
             settingsFile.write('  ' + sp + ': ' + self.speciesToAlleles[sp] + '\n')
 
-    def doOneStep(self, settings, jarFile, results):
+    def doOneStep(self, settings='settings', jarFile='stem.jar', results='results'):
         ''' mutates self.speciesToAlleles '''
 
         # call java
         output = subprocess.check_output(["java", "-jar", jarFile])
+
+        outLog = open('output', 'a')
+        outLog.write(output)
         debug(output)
 
         # find tree and print the results of the last run
@@ -144,13 +158,90 @@ class stemTree:
 
         return self.numSpecies
 
-    def doMaxSteps(self, settings, jarFile, results):
-        ''' mutates self.speciesToAlleles '''
+    def doMaxSteps(self, settings='settings', jarFile='stem.jar', results='results'):
+        ''' mutates self.speciesToAlleles until only one species'''
+
+        shutil.copy(settings, settings + '.save')
 
         numRemaining = self.doOneStep(settings, jarFile, results)
         while numRemaining > 1:
+            debug("NumberRemaining: " + str(numRemaining))
             numRemaining = self.doOneStep(settings, jarFile, results)
 
+        shutil.copy(settings + '.save', settings)
+
+    def chopTree(self, origTreeFile, newTreeFile, numTrees):
+        debug("TreeLine: " + str(self.treeLine))
+        if numTrees == None:  # copy whole file
+            for line in origTreeFile:
+                newTreeFile.write(line)
+        else:
+            # get to the correct line in origTreefile
+            for i in range(self.treeLine):
+                origTreeFile.readline()
+            # add the next numTrees lines and put them into genetrees.tre
+            for i in range(numTrees):
+                newTreeFile.write(origTreeFile.readline())
+
+            # update pointer in origTreeFile
+            self.treeLine += numTrees
+
+    def maxStepOnNTrees(self, settings='settings', jarFile='stem.jar',
+                    results='results', origTree='genetree.tre', numTrees=None):
+
+        # save original tree file with .orig tag
+        if origTree == 'genetree.tree':
+            shutil.copyfile(origTree, origTree + '.orig')
+            origTreeFile = open(origTree + '.orig', 'r')
+        else:
+            origTreeFile = open(origTree, 'r')
+        newTreeFile = open('genetrees.tre', 'w')
+
+        self.chopTree(origTreeFile, newTreeFile, numTrees)
+
+        newTreeFile.close()
+        origTreeFile.close()
+
+        self.doMaxSteps(settings, jarFile, results)
+
+    def run(self, settings='settings', jarFile='stem.jar', results='results', \
+                    origTree='genetrees.tre', numTrees=None, numTimes=1):
+
+        for completeStepUp in range(numTimes):
+            debug("Run Number: " + str(completeStepUp))
+            self.maxStepOnNTrees(settings, jarFile, results, origTree, numTrees)
+            self.reset()
+
+    def reset(self):
+        self.numSpecies = self.initialSpecies
+        self.speciesToAlleles = self.initialSpeciesToAlleles.copy()
+        debug("Resetting: self.initialSTA = " + str(self.initialSpeciesToAlleles))
+        debug("Resetting: self.STA = " + str(self.speciesToAlleles))
+
+
+    def test(self, settings='settings', jarFile='stem.jar', results='results', \
+                    listOrigTrees=None, listNumTrees=None, numTimes=1):
+        for tree in listOrigTrees:
+            for x in listNumTrees:
+                if x == None:
+                    num = 'all'
+                else:
+                    num = x
+                debug("Tree File: " + tree)
+                debug("Number of Trees: " + str(num))
+                runOnce = stemTree(settings)
+                runOnce.run(settings, jarFile, \
+                         results=results + '.' + tree + '.' + str(num), \
+                         origTree=tree, numTrees=x, numTimes=numTimes)
+                shutil.copy('output', 'output.' + tree + '.' + str(num))
+                os.remove('output')
+                del runOnce
+
 if __name__ == '__main__':
-    stepper = stemTree('settings')
-    stepper.doMaxSteps('settings', 'stem.jar', 'results')
+    stepper = stemTree()
+    stepper.test(listOrigTrees=
+                 ['gt2.deep.tre'], listNumTrees=[20], numTimes=10, jarFile='stem-hy.jar')
+#    stepper.test(listOrigTrees=
+#                 ['rep.10.tre', 'rep.4.tre', 'rep.7.tre', 'rep.2.tre',
+#                  'rep.5.tre', 'rep.8.tre', 'rep.1.tre', 'rep.3.tre',
+#                  'rep.6.tre', 'rep.9.tre'], listNumTrees=[None])
