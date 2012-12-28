@@ -1,3 +1,13 @@
+*.pyc
+git-credential-osxkeychain
+.project
+.git
+.gitignore.swp
+.pydevproject
+settings*
+output
+boot.tre
 *.tre
-*result*
-*settings*
+*.outputs
+results*
+trees*
