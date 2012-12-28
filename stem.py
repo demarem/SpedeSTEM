@@ -5,6 +5,7 @@ import StringIO
 import subprocess
 import shutil
 import os
+import chopTree
 
 def debug(message):
     print str(message)
@@ -190,27 +191,37 @@ class stemTree:
                     results='results', origTree='genetree.tre', numTrees=None):
 
         # save original tree file with .orig tag
+        # if origTree == 'genetree.tree':
+        #     shutil.copyfile(origTree, origTree + '.orig')
+        #     origTreeFile = open(origTree + '.orig', 'r')
+        # else:
+        #     origTreeFile = open(origTree, 'r')
+        # newTreeFile = open('genetrees.tre', 'a')
+        # os.system("wc -l genetrees.tre | tee treeLine")
+        # self.chopTree(origTreeFile, newTreeFile, numTrees)
+
+        # newTreeFile.close()
+        # origTreeFile.close()
+
         if origTree == 'genetree.tree':
             shutil.copyfile(origTree, origTree + '.orig')
-            origTreeFile = open(origTree + '.orig', 'r')
+            self.ct.openFiles(origTree + '.orig')            
         else:
-            origTreeFile = open(origTree, 'r')
-        newTreeFile = open('genetrees.tre', 'w')
-
-        self.chopTree(origTreeFile, newTreeFile, numTrees)
-
-        newTreeFile.close()
-        origTreeFile.close()
+            self.ct.openFiles(origTree)
+       
+        self.ct.chopTree(numTrees)
+        self.ct.finish()
 
         self.doMaxSteps(settings, jarFile, results)
 
     def run(self, settings='settings', jarFile='stem.jar', results='results', \
                     origTree='genetrees.tre', numTrees=None, numTimes=1):
-
+        self.ct = chopTree.ChopTree(origTree, "genetrees.tre") 
         for completeStepUp in range(numTimes):
             debug("Run Number: " + str(completeStepUp))
             self.maxStepOnNTrees(settings, jarFile, results, origTree, numTrees)
             self.reset()
+        self.ct.reset()
 
     def reset(self):
         self.numSpecies = self.initialSpecies
@@ -240,7 +251,7 @@ class stemTree:
 if __name__ == '__main__':
     stepper = stemTree()
     stepper.test(listOrigTrees=
-                 ['gt2.deep.tre'], listNumTrees=[20], numTimes=10, jarFile='stem-hy.jar')
+                 ['gt2.deep.tre'], listNumTrees=[20], numTimes=2, jarFile='stem-hy.jar')
 #    stepper.test(listOrigTrees=
 #                 ['rep.10.tre', 'rep.4.tre', 'rep.7.tre', 'rep.2.tre',
 #                  'rep.5.tre', 'rep.8.tre', 'rep.1.tre', 'rep.3.tre',
