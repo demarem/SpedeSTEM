@@ -1,9 +1,10 @@
 class ChopTree:
-    def __init__(self, origFilename, newFilename, maxNumRuns=5):
+    def __init__(self, origFilename, newFilename, maxNumTrees=5):
         self.linePointer = 0
-        self.numRuns = 0
-        self.maxNumRuns = maxNumRuns
+        self.curNumTrees = 0
+        self.maxNumTrees = maxNumTrees
         self.newFilename = newFilename
+        self.origFilename = origFilename
         # self.openFiles(origFilename, newFilename)
 
     def openFiles(self, origFilename, newFilename="genetrees.tre"):
@@ -12,11 +13,11 @@ class ChopTree:
 
     def check(self):
         # print self.numRuns, self.maxNumRuns
-        if self.numRuns >= self.maxNumRuns :
+        if self.curNumTrees >= self.maxNumTrees :
             self.reset()
 
     def chopTree(self, numTrees=5):
-        # self.check()
+        self.check()
 
         # get to the correct line in origTreefile
         for i in range(self.linePointer):
@@ -29,13 +30,13 @@ class ChopTree:
 
     def adjust(self, numTrees):
         self.linePointer += numTrees
-        self.numRuns += 1
+        self.curNumTrees += numTrees
 
     def reset(self):
         self.newTreeFile.close()
         open(self.newFilename, 'w').close()
         self.newTreeFile = open(self.newFilename, "a")
-        self.numRuns = 0
+        self.curNumTrees = 0
 
     def finish(self):
         self.origTreeFile.close()
@@ -44,8 +45,9 @@ class ChopTree:
 
 
 if __name__ == '__main__':
-    ct = ChopTree("origTree", "newTree", 10)
+    ct = ChopTree("origTree", "newTree", 20)
+    ct.openFiles('origTree') 
     ct.reset()
-    for i in range(12):
-        ct.chopTree(20)
+    for i in range(11):
+        ct.chopTree(5)
     ct.finish()
