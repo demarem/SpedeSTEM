@@ -200,7 +200,7 @@ class stemTree:
 
     def run(self, settings='settings', jarFile='stem.jar', results='results', \
                     origTree='genetrees.tre', numTrees=None, numTimes=1):
-        self.ct = chopTree.ChopTree(origTree, "genetrees.tre")
+        self.ct = chopTree.ChopTree(origTree, "genetrees.tre", maxNumTrees=20)
         for completeStepUp in range(numTimes):
             debug("Run Number: " + str(completeStepUp))
             self.maxStepOnNTrees(settings, jarFile, results, origTree, numTrees)
@@ -235,8 +235,8 @@ class stemTree:
 if __name__ == '__main__':
     stepper = stemTree()
     stepper.test(listOrigTrees=
-            ['cleaned.deep.rt.tre', 'cleaned.med.rt.tre', 'cleaned.shallow.rt.tre'], \
-            listNumTrees=[20], numTimes=2, jarFile='stem-hy.jar')
+            ['cleaned.deep.tre', 'cleaned.med.tre', 'cleaned.shallow.tre'], \
+            listNumTrees=[5], numTimes=2, jarFile='stem-hy.jar')
 #    stepper.test(listOrigTrees=
 #                 ['rep.10.tre', 'rep.4.tre', 'rep.7.tre', 'rep.2.tre',
 #                  'rep.5.tre', 'rep.8.tre', 'rep.1.tre', 'rep.3.tre',
