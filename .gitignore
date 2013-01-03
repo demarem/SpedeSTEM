@@ -5,6 +5,7 @@ git-credential-osxkeychain
 .gitignore.swp
 .pydevproject
 settings*
+.DS_Store
 output
 boot.tre
 *.tre
