@@ -74,12 +74,9 @@ class stemTree:
         debug(output)
 
         # pass output to parser for new tree and likelihood
-        try:
-            self.parser.parseOutput(output)
-            tree = self.parser.currentTree
-            likelihood = self.parser.currentLikelihood
-        except IOError:
-            print 'Could not parse output'
+        self.parser.parseOutput(output)
+        tree = self.parser.currentTree
+        likelihood = self.parser.currentLikelihood
 
         # pass tree, likelihood, number of species to output generator
         self.outputer.generateOutput(tree, likelihood, self.numSpecies)
@@ -104,5 +101,5 @@ class stemTree:
             numRemaining = self.doOneStep()
 
 if __name__ == '__main__':
-    stepper = stemTree()
+    stepper = stemTree(jarFile='stem-hy.jar')
     stepper.doMaxSteps()

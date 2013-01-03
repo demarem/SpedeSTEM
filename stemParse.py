@@ -42,7 +42,7 @@ class StemParse:
         settingsFile = open(settings, 'w')
         settingsFile.write(self.header)
         for name in popToAlleles.keys() :
-            settingsFile.write(name + ": " + popToAlleles[name] + "\n")
+            settingsFile.write("\t" + name + ": " + popToAlleles[name] + "\n")
         settingsFile.close()
 
         self.currentLikelihood = ''
@@ -58,11 +58,7 @@ class StemParse:
                 self.currentTree = treeLine.replace(';', '')
 
             elif "log likelihood" in line:
-                self.currentLiklihood = line.split(":")[1].strip()
+                self.currentLikelihood = line.split(":")[1].strip()
                 break
             line = buf.readline()
-
-        # throw exception if tree or likelihood were not found
-        if self.currentLikelihood == '' or self.currentTree == '':
-            raise IOError("ParseError")
 

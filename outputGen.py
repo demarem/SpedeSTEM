@@ -1,6 +1,6 @@
 class OutputGen:
-    def __init__(self, output='output'):
-        self.outputFile = open(output, 'w')
+    def __init__(self, results='results'):
+        self.outputFile = open(results, 'w')
 
     def generateOutput(self, tree, likelihood, numSpecies):
         self.outputFile.write(str(numSpecies - 1))
