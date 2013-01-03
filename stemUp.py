@@ -7,12 +7,12 @@ def debug(message):
     print str(message)
 
 class stemTree:
-    def __init__(self, jarFile='stem.jar', log='log'):
+    def __init__(self, jarFile='stem.jar', log='log', settings='settings'):
         self.log = log
         self.jarFile = jarFile
 
         # parse setting the first time
-        self.parser = stemParse.StemParse()
+        self.parser = stemParse.StemParse(settings)
         self.speciesToAlleles = self.parser.alleles
         self.numSpecies = len(self.speciesToAlleles)
 
