@@ -11,7 +11,7 @@ def debug(message):
 
 class Grouper:
     def __init__(self, settings='settings', associations='associations', \
-                 jarFile='stem.jar', results='results', log='log'):
+                 jarFile='stem-hy.jar', results='results', log='log'):
         self.jarFile = jarFile
         self.settings = settings
         self.logFile = open(log, 'a')
@@ -101,6 +101,7 @@ class Grouper:
 
         for setting in self.nextCombination():
             settingDict = self.mapAlleles(setting)
+            self.numSpecies = len(settingDict)
             self.parser.generateSettings(settingDict, self.settings)
 
             # call java

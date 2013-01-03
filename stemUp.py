@@ -3,13 +3,15 @@ import subprocess
 import stemParse
 import outputGen
 
-def debug(message):
-    print str(message)
+def debug(message, verbose):
+    if verbose:
+        print str(message)
 
-class stemTree:
-    def __init__(self, jarFile='stem.jar', log='log', settings='settings'):
+class StemUp:
+    def __init__(self, jarFile='stem.jar', log='log', settings='settings', verbose=True):
         self.log = log
         self.jarFile = jarFile
+        self.verbose = verbose
 
         # parse setting the first time
         self.parser = stemParse.StemParse(settings)
@@ -35,7 +37,7 @@ class stemTree:
             if testWeight < minWeight:
                 minSisters = (m.group(1), m.group(3))
 
-        debug("minSisters: " + str(minSisters))
+        debug("minSisters: " + str(minSisters), self.verbose)
         return minSisters
 
     def updateSpeciesDict(self, minSisters):
@@ -51,16 +53,16 @@ class stemTree:
         self.speciesToAlleles[minSisters[0] + minSisters[1]] = \
             alleles_1 + ", " + alleles_2
 
-        debug("Added new combined species: " + str(self.speciesToAlleles))
+        debug("Added new combined species: " + str(self.speciesToAlleles), self.verbose)
 
         # delete both old species
         del self.speciesToAlleles[sis_1]
         del self.speciesToAlleles[sis_2]
 
-        debug("Removed old species: " + str(self.speciesToAlleles))
+        debug("Removed old species: " + str(self.speciesToAlleles), self.verbose)
 
         self.numSpecies = len(self.speciesToAlleles)
-        debug("number of species: " + str(self.numSpecies))
+        debug("number of species: " + str(self.numSpecies), self.verbose)
 
 
     def doOneStep(self):
@@ -71,7 +73,7 @@ class stemTree:
 
         outLog = open(self.log, 'a')
         outLog.write(output)
-        debug(output)
+        debug(output, self.verbose)
 
         # pass output to parser for new tree and likelihood
         self.parser.parseOutput(output)
@@ -97,9 +99,9 @@ class stemTree:
 
         numRemaining = self.doOneStep()
         while numRemaining > 1:
-            debug("NumberRemaining: " + str(numRemaining))
+            debug("NumberRemaining: " + str(numRemaining), self.verbose)
             numRemaining = self.doOneStep()
 
 if __name__ == '__main__':
-    stepper = stemTree(jarFile='stem-hy.jar')
+    stepper = StemUp(jarFile='stem-hy.jar')
     stepper.doMaxSteps()
