@@ -10,6 +10,6 @@ output
 boot.tre
 *.tre
 *.outputs
-results*
-trees*
+results/*
+trees/*
 log
