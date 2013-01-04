@@ -3,7 +3,7 @@ class ChopTree:
         self.linePointer = 0
         self.maxNumTrees = maxNumTrees
         self.numTrees = numTrees
-        self.origTreeFile = open(origFilename, "r")
+        self.origTreeFile = open(origFilename, 'r')
         self.newFilename = newFilename
 
     def chop(self):
@@ -11,7 +11,7 @@ class ChopTree:
         for i in range(self.linePointer):
             self.origTreeFile.readline()
 
-        treeFile = open(self.newFilename, "w")
+        treeFile = open(self.newFilename, 'w')
         for i in range(self.numTrees):
             treeFile.write(self.origTreeFile.readline())
         treeFile.close()
@@ -38,4 +38,4 @@ class ChopTree:
                     print line.strip()
 
 if __name__ == '__main__':
-    pass
+    print 'no default actions yet...'

@@ -1,4 +1,4 @@
-import sys, StringIO
+import sys, StringIO, os
 
 class StemParse:
     def __init__ (self, allelesName='settings', groupsName=None):
@@ -61,4 +61,8 @@ class StemParse:
                 self.currentLikelihood = line.split(":")[1].strip()
                 break
             line = buf.readline()
+
+        # remove superfluous files?
+        os.remove('mle.tre')
+        os.remove('boot.tre')
 
