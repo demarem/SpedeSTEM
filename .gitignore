@@ -1,5 +1,4 @@
 *.pyc
-git-credential-osxkeychain
 .project
 .git
 .gitignore.swp
@@ -10,6 +9,4 @@ output
 boot.tre
 *.tre
 *.outputs
-results/*
-trees/*
 log
