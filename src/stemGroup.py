@@ -3,27 +3,26 @@ Generates settings files based on groups of populations and their alleles.
 '''
 
 import stemParse
-import outputGen
 import subprocess
 
-def debug(message):
-    print str(message)
+def debug(message, verbose):
+    if verbose:
+        print str(message)
 
-class Grouper:
+class StemGroup:
     def __init__(self, settings='settings', associations='associations', \
-                 jarFile='stem-hy.jar', results='results', log='log'):
+                 jarFile='stem-hy.jar', log='stemOut', verbose=True):
         self.jarFile = jarFile
         self.settings = settings
         self.logFile = open(log, 'a')
+        self.verbose = verbose
 
         # parse both settings the first time
         self.parser = stemParse.StemParse(settings, associations)
         self.speciesToAlleles = self.parser.alleles
         self.numSpecies = len(self.speciesToAlleles)
         self.groups = self.parser.groups
-
-        # initialize output generator
-        self.outputer = outputGen.OutputGen(results)
+        self.totalNumRuns = 0
 
     def groupPartitions(self, group):
         ''' group is a list of populations.
@@ -42,6 +41,7 @@ class Grouper:
             for i in range(len(groupList)):
                 groupList[i] = groupList[i].strip()
             allPartitions[group] = self.groupPartitions(groupList)
+
         return allPartitions
 
     def nextCombination(self):
@@ -77,6 +77,7 @@ class Grouper:
                     if workingList[j] >= countList[j]:
                         workingList[j] = 0
             allLists.append(list(workingList))
+        self.totalNumRuns = len(allLists)
         return allLists
 
     def mapAlleles(self, popList):
@@ -98,8 +99,10 @@ class Grouper:
         return popToAlleles
 
     def run(self):
-
+        counter = 0
         for setting in self.nextCombination():
+            if counter == 0:
+                    print "    %d permutations to run..." % self.totalNumRuns
             settingDict = self.mapAlleles(setting)
             self.numSpecies = len(settingDict)
             self.parser.generateSettings(settingDict, self.settings)
@@ -108,18 +111,16 @@ class Grouper:
             output = subprocess.check_output(["java", "-jar", self.jarFile])
 
             self.logFile.write(output)
-            debug(output)
+            debug(output, self.verbose)
 
-            # pass output to parser for new tree and likelihood
-            self.parser.parseOutput(output)
-            tree = self.parser.currentTree
-            likelihood = self.parser.currentLikelihood
+            counter += 1
 
-            # pass tree, likelihood, number of species to output generator
-            self.outputer.generateOutput(tree, likelihood, self.numSpecies)
+            if counter % 100 == 0:
+                print "    Completed %d of %d permutations..." % (counter, self.totalNumRuns)
+
 
     def test(self):
-        test = Grouper()
+        test = StemGroup()
         print 'testing settings parsing: ', test.speciesToAlleles, test.groups
         print test.groupPartitions([1, 2, 3, 4])
         print test.buildAllPartitions()
@@ -131,6 +132,6 @@ class Grouper:
         self.logFile.close()
 
 if __name__ == '__main__':
-    run = Grouper(settings='settings', associations='associations', \
-                 jarFile='stem.jar', results='results', log='log')
+    run = StemGroup(settings='settings', associations='associations', \
+                 jarFile='stem-hy.jar', results='results', log='log')
     run.run()

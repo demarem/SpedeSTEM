@@ -1,7 +1,6 @@
 import re
 import subprocess
 import stemParse
-import outputGen
 
 def debug(message, verbose):
     if verbose:
@@ -17,9 +16,6 @@ class StemUp:
         self.parser = stemParse.StemParse(settings)
         self.speciesToAlleles = self.parser.alleles
         self.numSpecies = len(self.speciesToAlleles)
-
-        # initialize output generator
-        self.outputer = outputGen.OutputGen()
 
     def findMinSisters(self, tree):
         # get a list of the sisters in tree
@@ -78,10 +74,6 @@ class StemUp:
         # pass output to parser for new tree and likelihood
         self.parser.parseOutput(output)
         tree = self.parser.currentTree
-        likelihood = self.parser.currentLikelihood
-
-        # pass tree, likelihood, number of species to output generator
-        self.outputer.generateOutput(tree, likelihood, self.numSpecies)
 
         # determine the two sister species to collapse
         minSisters = self.findMinSisters(tree)

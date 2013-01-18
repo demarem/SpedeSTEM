@@ -35,6 +35,14 @@ class StemParse:
             values = splits[1].strip()
             newDict[key] = values
 
+    def buildHeader(self, theta):
+        self.header = "properties:\n" + \
+                        "    run: 1\t\t\t#0=user-tree, 1=MLE, 2=search\n" + \
+                        "    theta: " + str(theta) + "\n" + \
+                        "    num_saved_trees: 15\n" + \
+                        "    beta: 0.0005\n" + \
+                        "species:"
+
     def generateSettings(self, popToAlleles, settings='settings'):
         ''' 
         Writes the settings file with popToAlleles in the form of str to str.
@@ -62,7 +70,7 @@ class StemParse:
                 break
             line = buf.readline()
 
-        # remove superfluous files?
+        # remove superfluous
         os.remove('mle.tre')
         os.remove('boot.tre')
 
