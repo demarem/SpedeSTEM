@@ -4,7 +4,7 @@ import argparse
 import sys
 import os
 import shutil
-sys.path.insert(0, os.path.abspath(__file__) + '/../src/')
+sys.path.insert(0, os.path.abspath(__file__) + '/../src/')  # add src directory to path
 import iterator
 import processStemOut
 import parseBeast
@@ -14,15 +14,31 @@ import parseBeast
 #    - actually run the scripts
 #    - determine which combinations of arguments are required with others
 #    - ability to handle multiple types of settings files/associations files
+#    - find a better way to add src directory to path (for other os's as well)
 
 def parseArgs():
     parser = argparse.ArgumentParser(\
-        description='SpedeSTEM 2, a STEM wrapper for discovery and validation analysis.', \
+        description='SpedeSTEM 2, a python package for species delimitation.', \
         epilog='For additional help see [this website]')
 
     subparsers = parser.add_subparsers(help='commands', dest='command')
 
-    # discovery analysis mode
+    ########################### setup mode #############################
+    setup_parser = subparsers.add_parser('setup', help='prepare tree and settings files for analysis')
+    setup_parser.add_argument('-c', '--clean', metavar='treeFile', nargs='+', \
+                              help='prepare tree file(s) for analysis')
+    setup_parser.add_argument('-s', '--scalingFile', metavar='scalingFile', nargs=1, \
+                              help='provide a text file with each scaling factor on a new line ' + \
+                              'in the format: [scalingFactor]. Values prefixed in the order that ' + \
+                              'trees appear after the clean command, DEFAULT: [1.0] for each', default=None)
+    setup_parser.add_argument('-t', '--traits', metavar='traitsFile', nargs='+',
+                              help='read in traits file(s) as Beast format')
+    setup_parser.add_argument('-bt', '--theta', type=float, metavar="thetaValue",
+                              help='set theta value for beast formatted traits files, DEFAULT: 1.0', nargs=1, \
+                              default=[1.0])
+
+
+    ######################### discovery analysis mode ####################
     discovery_parser = subparsers.add_parser('discovery', help='discovery analysis')
     discovery_parser.add_argument('-n', '--numtrees', metavar='numTrees', type=int, nargs=1, \
                                   help='number of trees to be sampled from each specified tree file, ' + \
@@ -35,15 +51,15 @@ def parseArgs():
                                   help='specify tree file(s), DEFAULT: genetrees.tre',
                                   default=['genetrees.tre'])
     discovery_parser.add_argument('-b', '--beast', action="store_true", help='read settings file as BEAST format')
-    discovery_parser.add_argument('-bt', '--theta', type=float, metavar="thetaValue",
-                                  help='set theta value for beast formatted settings files, DEFAULT: 1.0', nargs=1)
+
     discovery_parser.add_argument('-s', '--settings', metavar='settingsFile', nargs=1, \
                                   help='specify settings file relative path, DEFAULT: settings',
                                   default=['settings'])
     discovery_parser.add_argument('-v', '--verbose', action="store_true", help='execute in verbose mode, DEFAULT: off',
                                    default=False)
 
-    # validation analysis mode
+
+    ####################### validation analysis mode #######################
     validation_parser = subparsers.add_parser('validation', help='validation analysis')
     validation_parser.add_argument('-n', '--numtrees', metavar='numTrees', type=int, nargs=1, \
                                   help='number of trees to be sampled from each specified tree file, ' + \
@@ -66,8 +82,6 @@ def parseArgs():
     validation_parser.add_argument('-v', '--verbose', action="store_true", help='execute in verbose mode, DEFAULT: off'
                                    , default=False)
 
-    # analysis mode
-    subsampling_parser = subparsers.add_parser('analysis', help='talk about analysis')
 
     # subsampling mode
     subsampling_parser = subparsers.add_parser('subsampling', help='talk about subsampling')
@@ -75,26 +89,46 @@ def parseArgs():
     # testing mode
     testing_parser = subparsers.add_parser('testing', help='power testing')
 
-    # clean tree mode
-    cleantree_parser = subparsers.add_parser('cleantrees', help='manipulate tree files')
-
     # restore
     restore_parser = subparsers.add_parser('restore', help='restore initial configuration, ' + \
                                            'WARNING: all results in project folder will be lost, ' + \
                                            'move files out of this directory to save them.')
     args = parser.parse_args()
-    # print args
+
+    # catch invalid option configurations
+    if args.scalingFile and not args.clean:
+        setup_parser.error('Scaling factors specified without tree file, ' + \
+                           'add --clean or remove --scalingFile')
+
+    print args
     return args
 
-def run(args):
-    if args.beast:
-        if args.theta:
-            theta = args.theta
-        else:
-            theta = 1.0
-        buildSettings(args.settings[0], theta)
+def executeChoice(args):
+    if args.command == 'setup':
+        ''' 
+        Arguments (args.): 
+            clean -> list of strings representing tree file names
+            scalingFile -> string representing file name
+            theta -> float value used when beast file is specified
+            traits -> string representing beast formatted file
+        '''
+        print '---Performing Setup---'
 
-    if args.command == 'discovery':
+        if args.clean:
+            if args.scalingFile:
+                scalingFile = args.scalingFile[0]
+            # clean trees and prefix each with scaling factors if file provided
+            cleanTrees.CleanTrees(args.clean, scalingFile, sigfigs=8)
+
+        if args.traits:
+            # convert beast formatted traits file to stem settings
+            parseBeast.ParseBeast(settingsIn=args.traits[0], theta=args.theta[0])
+            print 'here'
+
+        else:
+            print "SpedeSTEM_2 setup: error: No options specified. Try '-h' for help"
+
+    elif args.command == 'discovery':
         print '---DISCOVERY ANALYSIS---'
         # check here for settings file, tree files, maybe scan the files for correct formatting
         discovery = iterator.Iterator([args.trees], numRuns=args.runs[0], \
@@ -124,12 +158,9 @@ def run(args):
     elif args.command == 'restore':
         print 'Restoring...'
 
-def buildSettings(settings, theta):
-    parser = parseBeast.ParseBeast(settings, theta)
-
 def main():
     args = parseArgs()
-    run(args)
+    executeChoice(args)
 
 
 if __name__ == '__main__':
