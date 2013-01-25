@@ -12,7 +12,7 @@ class Iterator:
         self.maxTrees = maxTrees
         self.jarFile = jarFile
         self.masterSettings = settings
-        self.currentSettings = settings
+        self.currentSettings = 'settings'
         self.masterTreeList = masterTreeList
         self.results = results
         self.log = log
@@ -21,13 +21,16 @@ class Iterator:
         self.verbose = verbose
 
         # check values
-        assert self.maxTrees % self.numTrees == 0, \
-            'maxTrees must be divisible by numTrees'
+        if self.numTrees:
+            assert self.maxTrees % self.numTrees == 0, \
+                'maxTrees must be divisible by numTrees'
 
-        # make copy of original settings
+        # make copy of original settings if necessary or make 'settings' file
         if settings == 'settings':
             shutil.copy(settings, settings + '.save')
             self.masterSettings = settings + '.save'
+        else:
+            shutil.copy(settings, self.currentSettings)
 
         # make sure nothing in masterTreeList is named genetrees.tre
         for i in range(len(self.masterTreeList)):
@@ -39,13 +42,33 @@ class Iterator:
                     self.masterTreeList[i][j] = tree + '.save'
 
         # remove old stem log if it's present
-        try:
-            os.remove(self.log)
-        except OSError:
-            pass
+        if os.path.exists(self.log):
+            print "\n--------------------- CAUTION -----------------------"
+            print self.log, "is about to be deleted. ", \
+                "If you would like to preserve it, remove it from this directory."
+            choice = raw_input('Are you ready to continue? (y/n): ')
+            if choice.strip() != 'y':
+                print '\nExiting...\n'
+                exit()
+            try:
+                os.remove(self.log)
+            except OSError:
+                pass
+            print "-----------------------------------------------------\n"
+
+        # count number of trees if numTrees is None
+        if not self.numTrees:
+            treeFile = open(self.masterTreeList[0][0])
+            numLines = 0
+            for line in treeFile:
+                if line.strip() != '':
+                    numLines += 1
+            self.numTrees = numLines
+            self.maxTrees = numLines
 
 
     def printSettings(self):
+        print '--------------------- SETTINGS ----------------------'
         print "In Varification Mode: ", self.isValidation
         print "Tree File(s): ", self.masterTreeList
         print "Settings File: ", self.masterSettings
@@ -54,8 +77,10 @@ class Iterator:
         print "Number of trees sampled each run: ", self.numTrees
         print "Number of runs: ", self.numRuns
         print "In Verbose Mode: ", self.verbose
+        print '-------------------- END SETTINGS --------------------\n'
 
     def run(self):
+        print '--------------------- EXECUTION ----------------------'
         treeSizes = [(x + 1) * self.numTrees for x in range(self.maxTrees / self.numTrees)]
         runCounter = 0
         totalRuns = len(treeSizes) * self.numRuns * len(self.masterTreeList)
@@ -82,8 +107,8 @@ class Iterator:
                     shutil.copy(self.masterSettings, self.currentSettings)
 
                     # Print progress
-                    print "Completed %d of %d runs..." % (runCounter, totalRuns)
-        print 'All runs completed'
+                    print "\tCompleted %d of %d runs..." % (runCounter, totalRuns)
+        print '\n+++++++++++++++ All analysis completed! +++++++++++++++\n'
 
 if __name__ == '__main__':
     tester = Iterator(\

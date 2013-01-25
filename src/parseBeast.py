@@ -9,7 +9,7 @@ class ParseBeast:
     ''' talk about 2 or 3 column file parsing'''
 
     def __init__ (self, settingsIn='settings', settingsOut='settings.stem', \
-                  associations='associations', theta=1.0):
+                  associations='associations.stem', theta=1.0):
         self.speciesToTraits = {}
         self.groupsToSpecies = {}
         self.header = ''
@@ -19,13 +19,14 @@ class ParseBeast:
 
         try:
             settingsInFile = open(settingsIn, 'r')
-            settingsOutFile = settingsOut(settingsOut, 'w')
+            settingsOutFile = open(settingsOut, 'w')
         except IOError:
             print 'Trouble opening beast formatted trait input and output files.'
             exit()
 
         self.buildHeader(theta)
         if self.doesIncludeAssociations(settingsInFile):
+            print 'Parsing Beast traits file for Species, Traits, and Grouping'
             self.getSettingsAndAssociations(settingsInFile)
 
             try:
@@ -38,12 +39,13 @@ class ParseBeast:
 
             associationsFile.close()
         else:
+            print 'Parsing Beast traits file for Species and Traits only'
             self.getSettingsOnly(settingsInFile)
         self.generateSettings(settingsOutFile)
 
         try:
-            settingsInFile = open(settingsIn, 'r')
-            settingsOutFile = settingsOut(settingsOut, 'w')
+            settingsInFile.close()
+            settingsOutFile.close()
         except IOError:
             print 'Trouble closing beast formatted trait input and output files.'
             exit()
@@ -77,8 +79,10 @@ class ParseBeast:
 
             # build associations dict
             if self.groupsToSpecies.has_key(group):
-                updatedSpecies = self.groupsToSpecies[group] + species
-                self.groupsToSpecies[group] = updatedSpecies
+                previousSpecies = self.groupsToSpecies[group]
+                if species not in previousSpecies:
+                    updatedSpecies = previousSpecies + [species]
+                    self.groupsToSpecies[group] = updatedSpecies
             else:
                 self.groupsToSpecies[group] = [species]
 
@@ -98,10 +102,10 @@ class ParseBeast:
 
     def buildHeader(self, theta):
         self.header = "properties:\n" + \
-                        "    run: 1\t\t\t#0=user-tree, 1=MLE, 2=search\n" + \
-                        "    theta: " + str(theta) + "\n" + \
-                        "    num_saved_trees: 15\n" + \
-                        "    beta: 0.0005\n" + \
+                        "\trun: 1\t\t\t#0=user-tree, 1=MLE, 2=search\n" + \
+                        "\ttheta: " + str(theta) + "\n" + \
+                        "\tnum_saved_trees: 15\n" + \
+                        "\tbeta: 0.0005\n" + \
                         "species:\n"
 
     def generateSettings(self, settingsOutFile):

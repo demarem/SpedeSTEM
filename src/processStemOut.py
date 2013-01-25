@@ -14,6 +14,8 @@ class ProcessStemOut:
         self.resultsFile = open(results, 'w')
         self.runs = []
 
+        self.parseLog()
+
     def parseLog(self):
         singleOutput = ''
         for line in self.logFile:
@@ -24,7 +26,6 @@ class ProcessStemOut:
 
     def parseSingleOutput(self, singleOutput):
         ''' returns a 3-tuple of (tree, numTips, likelihood) '''
-        self.parseLog()
 
         outputBuffer = cStringIO.StringIO(singleOutput)
 
@@ -49,6 +50,9 @@ class ProcessStemOut:
         return (tree, numTips, likelihood)
 
     def averageOutputByTips(self):
+
+        self.resultsFile.write('Tips-1\tLog Likelihood\n')
+
         tipsToNumAndSum = {}
         for run in self.runs:
             numTips = run[1]
@@ -63,12 +67,19 @@ class ProcessStemOut:
 
         for tips in tipsToNumAndSum.keys():
             # avg / num
-            self.resultsFile.write(str(tips) + ": " + \
-                    str(tipsToNumAndSum[tips][1] / tipsToNumAndSum[tips][0]))
+            self.resultsFile.write(str(tips) + ":\t" + \
+                    str(tipsToNumAndSum[tips][1] / tipsToNumAndSum[tips][0]) + '\n')
 
     def averageOutputByTrees(self, numPerms):
-        self.parseLog()
-        configs = [[] for x in xrange(numPerms)]
+        self.resultsFile.write('Representative Tree Structure; Number of Tips - 1; Log Likelihood; Number of Occurrences\n\n')
+
+        if numPerms:
+            configs = [[] for x in xrange(numPerms)]
+        else:
+            configs = [[] for x in xrange(len(self.runs))]
+
+        if not numPerms:
+            numPerms = len(self.runs) + 1
 
         lineNumber = 0
         for run in self.runs:
@@ -88,3 +99,7 @@ class ProcessStemOut:
 
             self.resultsFile.write(tree + '; ' + str(numTips) + '; ' +
                     str(sumLike / len(config)) + '; ' + str(len(config)) + '\n')
+
+if __name__ == '__main__':
+    test = ProcessStemOut()
+    test.averageOutputByTrees(None)

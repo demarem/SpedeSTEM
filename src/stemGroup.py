@@ -4,6 +4,7 @@ Generates settings files based on groups of populations and their alleles.
 
 import stemParse
 import subprocess
+import partition
 
 def debug(message, verbose):
     if verbose:
@@ -27,7 +28,7 @@ class StemGroup:
     def groupPartitions(self, group):
         ''' group is a list of populations.
         returns the list of all different partitions of group. '''
-        import partition
+
         pIter = partition.Partition(group)
         output = []
         for p in pIter:
@@ -102,7 +103,7 @@ class StemGroup:
         counter = 0
         for setting in self.nextCombination():
             if counter == 0:
-                    print "    %d permutations to run..." % self.totalNumRuns
+                    print "\t%d permutations to run..." % self.totalNumRuns
             settingDict = self.mapAlleles(setting)
             self.numSpecies = len(settingDict)
             self.parser.generateSettings(settingDict, self.settings)
@@ -115,8 +116,8 @@ class StemGroup:
 
             counter += 1
 
-            if counter % 100 == 0:
-                print "    Completed %d of %d permutations..." % (counter, self.totalNumRuns)
+            if counter % 10 == 0:
+                print "\t\tCompleted %d of %d permutations..." % (counter, self.totalNumRuns)
 
 
     def test(self):

@@ -1,5 +1,6 @@
 # compiled files
 *.pyc
+*.pyo
 
 # OS or Editor files
 .project
@@ -18,6 +19,9 @@ nbproject
 *.sublime-workspace
 
 # project specific
+stemOut
 log
 settings*
+results
+associations
 *.tre

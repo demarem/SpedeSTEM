@@ -1,5 +1,6 @@
 # compiled files
 *.pyc
+*.pyo
 
 # OS or Editor files
 .project
