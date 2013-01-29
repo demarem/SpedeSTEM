@@ -1,5 +1,7 @@
 #!/usr/bin/env python -O -t -W all
 
+import src.wilik as wilik
+
 ''' 
 Parse stem raw output and write either simple ';' delineated, average by
 number of tips, or average by tree configuration.
@@ -15,6 +17,8 @@ class ProcessStemOut:
         self.runs = []
 
         self.parseLog()
+
+        self.logFile.close()
 
     def parseLog(self):
         singleOutput = ''
@@ -48,6 +52,14 @@ class ProcessStemOut:
                 assert likelihood < 0, 'Found a positive log likelihood'
 
         return (tree, numTips, likelihood)
+
+    def rawOutput(self):
+        for run in self.runs:
+            tree = run[0]
+            numTips = run[1]
+            likelihood = run[2]
+            self.resultsFile.write(tree + '; ' + str(numTips) + '; ' + str(likelihood) + '\n')
+        self.resultsFile.close()
 
     def averageOutputByTips(self):
 
@@ -99,6 +111,17 @@ class ProcessStemOut:
 
             self.resultsFile.write(tree + '; ' + str(numTips) + '; ' +
                     str(sumLike / len(config)) + '; ' + str(len(config)) + '\n')
+
+    def calculateWilik(self):
+        wl = wilik.WiLik("results", "results.wi")
+        lineCount = wl.countLines(wl.inputName)
+
+        wl.openFiles()
+
+        wl.readKLog(blockSize=lineCount)
+        wl.computeAll()
+        wl.writeMeans()
+        wl.closeFiles()
 
 if __name__ == '__main__':
     test = ProcessStemOut()

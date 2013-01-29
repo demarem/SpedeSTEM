@@ -39,26 +39,22 @@ def parseArgs():
 
     ######################### discovery analysis mode ####################
     discovery_parser = subparsers.add_parser('discovery', help='discovery analysis')
-    discovery_parser.add_argument('-t', '--tree', metavar='treeFile', nargs=1,
-                                  help='specify tree file, DEFAULT: cleaned.genetrees.tre',
-                                  default=['cleaned.genetrees.tre'])
-    discovery_parser.add_argument('-s', '--settings', metavar='settingsFile', nargs=1, \
-                                  help='specify settings file relative path, DEFAULT: settings.stem',
-                                  default=['settings.stem'])
+    discovery_parser.add_argument('-t', '--tree', metavar='treeFile', nargs=1, required=True, \
+                                  help='specify tree file')
+    discovery_parser.add_argument('-s', '--settings', metavar='settingsFile', nargs=1, required=True, \
+                                  help='specify settings file in STEM format')
     discovery_parser.add_argument('-v', '--verbose', action="store_true", help='execute in verbose mode, DEFAULT: off',
                                    default=False)
 
 
     ####################### validation analysis mode #######################
     validation_parser = subparsers.add_parser('validation', help='validation analysis')
-    validation_parser.add_argument('-t', '--tree', metavar='treeFile', nargs=1,
-                                  help='specify tree file, DEFAULT: cleaned.genetrees.tre', default=['cleaned.genetrees.tre'])
-    validation_parser.add_argument('-s', '--settings', metavar='settingsFile', nargs=1, \
-                                  help='specify settings file relative path, DEFAULT: settings', \
-                                  default=['settings'])
-    validation_parser.add_argument('-a', '--associations', metavar='associationsFile', nargs=1, \
-                                   help='specify associations file relative path, DEFAULT: associations.stem',
-                                   default=['associations.stem'])
+    validation_parser.add_argument('-t', '--tree', metavar='treeFile', nargs=1, required=True, \
+                                  help='specify tree file')
+    validation_parser.add_argument('-s', '--settings', metavar='settingsFile', nargs=1, required=True, \
+                                  help='specify settings file in STEM format')
+    validation_parser.add_argument('-a', '--associations', metavar='associationsFile', nargs=1, required=True, \
+                                   help='specify associations file in STEM format')
     validation_parser.add_argument('-v', '--verbose', action="store_true", help='execute in verbose mode, DEFAULT: off'
                                    , default=False)
 
@@ -128,10 +124,11 @@ def executeChoice(args):
         discovery.run()
 
         # process the stem output
-        print "Calculating average log likelihoods...",
+        print "Completing Analysis...",
         processor = processStemOut.ProcessStemOut()
-        processor.averageOutputByTips()
-        print "See 'results' file\n"
+        processor.rawOutput()
+        processor.calculateWilik()
+        print "See 'results' and results.wi files\n"
 
     elif args.command == 'validation':
         print '\n#################################'
@@ -146,10 +143,11 @@ def executeChoice(args):
         validation.run()
 
         # process the stem output
-        print "Calculating average log likelihoods...",
+        print "Completing Analysis...",
         processor = processStemOut.ProcessStemOut()
-        processor.averageOutputByTrees(None)
-        print "See 'results' file\n"
+        processor.rawOutput()
+        processor.calculateWilik()
+        print "See 'results' and results.wi files\n"
 
     elif args.command == 'testing':
         print 'Testing...'
