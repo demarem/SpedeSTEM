@@ -128,7 +128,7 @@ def executeChoice(args):
         processor = processStemOut.ProcessStemOut()
         processor.rawOutput()
         processor.calculateWilik()
-        print "See 'results' and results.wi files\n"
+        print "See 'results.txt' and 'itTable.txt' files\n"
 
     elif args.command == 'validation':
         print '\n#################################'
@@ -147,7 +147,7 @@ def executeChoice(args):
         processor = processStemOut.ProcessStemOut()
         processor.rawOutput()
         processor.calculateWilik()
-        print "See 'results' and results.wi files\n"
+        print "See 'results.txt' and 'itTable.txt' files\n"
 
     elif args.command == 'testing':
         print 'Testing...'

@@ -11,7 +11,7 @@ import cStringIO
 import re
 
 class ProcessStemOut:
-    def __init__(self, log='stemOut', results='results'):
+    def __init__(self, log='stemOut.txt', results='results.txt'):
         self.logFile = open(log, 'r')
         self.resultsFile = open(results, 'w')
         self.runs = []
@@ -113,7 +113,7 @@ class ProcessStemOut:
                     str(sumLike / len(config)) + '; ' + str(len(config)) + '\n')
 
     def calculateWilik(self):
-        wl = wilik.WiLik("results", "results.wi")
+        wl = wilik.WiLik("results.txt", "itTable.txt")
         lineCount = wl.countLines(wl.inputName)
 
         wl.openFiles()

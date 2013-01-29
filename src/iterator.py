@@ -5,7 +5,7 @@ import stemUp, stemGroup
 
 class Iterator:
     def __init__(self, masterTreeList, numRuns=5, numTrees=5, maxTrees=20, jarFile='stem-hy.jar',
-                 settings='settings', associations='associations', results='results', log='stemOut',
+                 settings='settings.txt', associations='associations.txt', results='results.txt', log='stemOut.txt',
                  isValidation=False, verbose=False):
         self.numRuns = numRuns
         self.numTrees = numTrees
