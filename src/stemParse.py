@@ -1,11 +1,11 @@
 import sys, StringIO, os
+import re
 
 class StemParse:
     def __init__ (self, allelesName='settings', groupsName=None):
         self.groups = {}
         self.alleles = {}
         self.header = ""
-        self.popToAlleles = {}
         self.currentLikelihood = ''
         self.currentTree = ''
 
@@ -15,9 +15,39 @@ class StemParse:
         allelesFile.close()
 
         if groupsName:
-            groupsFile = open(groupsName, "r")
-            self.getSettings(groupsFile, self.groups)
-            groupsFile.close()
+            try:
+                groupsFile = open(groupsName, "r")
+                self.getSettings(groupsFile, self.groups)
+                groupsFile.close()
+            except IOError:
+                print "ERROR: Could not open associations file '" + groupsName + "'"
+                sys.exit()
+
+            # check that species from both files match up
+            # determine all species from both files
+            groupSpecies = []
+            alleleSpecies = []
+            for group in self.groups:
+                species = re.split(r"\s*,\s*", self.groups[group])
+                for sp in species:
+                    groupSpecies.append(sp)
+
+            for species in self.alleles:
+                alleleSpecies.append(species)
+
+            # check if every species in associations is in settings
+            for sp in groupSpecies:
+                if sp not in alleleSpecies:
+                    print "\nASSOCIATIONS ERROR: Species '" + sp + "' was found in associations file but not in settings file"
+                    sys.exit()
+
+            # check if every species in settings is in associations
+            for sp in alleleSpecies:
+                if sp not in groupSpecies:
+                    print "\nASSOCIATIONS ERROR: Species '" + sp + "' was found in settings file but not in associations file"
+                    sys.exit()
+
+
 
     def getHeader(self, groupsFile):
         line = groupsFile.readline()

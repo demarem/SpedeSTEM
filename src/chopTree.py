@@ -1,3 +1,5 @@
+import sys
+
 class ChopTree:
     def __init__(self, origFilenames, newFilename='genetrees.tre', maxNumTrees=20, numTrees=5):
         self.linePointer = 0
@@ -5,12 +7,20 @@ class ChopTree:
         self.numTrees = numTrees
         self.origTreeFiles = []
         for f in origFilenames:
-            self.origTreeFiles.append(open(f, 'r'))
+            try:
+                self.origTreeFiles.append(open(f, 'r'))
+            except IOError:
+                print "ERROR: Could not open tree file '" + f + "'"
+                sys.exit()
         self.newFilename = newFilename
 
     def chop(self):
-        # open new treefile
-        treeFile = open(self.newFilename, 'w')
+        # open new tree file
+        try:
+            treeFile = open(self.newFilename, 'w')
+        except IOError:
+            print "ERROR: trouble opening tree file '" + self.newFilename + "'"
+            sys.exit()
 
         # get to the correct line in origTreefile
         for f in self.origTreeFiles:
@@ -18,7 +28,11 @@ class ChopTree:
                 f.readline()
 
             for i in range(self.numTrees):
-                treeFile.write(f.readline())
+                line = f.readline()
+                if len(line.strip()) == 0:
+                    print "ERROR: Tree file has an insufficient number of trees."
+                    sys.exit()
+                treeFile.write(line)
         treeFile.close()
 
         self.linePointer += self.maxNumTrees - self.numTrees

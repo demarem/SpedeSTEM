@@ -2,9 +2,10 @@
 Generates settings files based on groups of populations and their alleles.
 '''
 
-import stemParse
+import src.stemParse as stemParse
 import subprocess
-import partition
+import src.partition as partition
+import sys
 
 def debug(message, verbose):
     if verbose:
@@ -103,16 +104,23 @@ class StemGroup:
         counter = 0
         for setting in self.nextCombination():
             if counter == 0:
-                    print "\t%d permutations to run..." % self.totalNumRuns
+                print "\t%d permutations to run..." % self.totalNumRuns
             settingDict = self.mapAlleles(setting)
             self.numSpecies = len(settingDict)
             self.parser.generateSettings(settingDict, self.settings)
 
             # call java
-            output = subprocess.check_output(["java", "-jar", self.jarFile])
-
-            self.logFile.write(output)
-            debug(output, self.verbose)
+            try:
+                output = subprocess.check_output(["java", "-jar", self.jarFile])
+                self.logFile.write(output)
+                debug(output, self.verbose)
+            except subprocess.CalledProcessError, e:
+                print e.output
+                self.logFile.write(e.output)
+                debug(e.output, self.verbose)
+                print "-------STEM ERROR------"
+                print "STEM calculation failed. Last STEM message has been printed above and logged in 'stemOut.txt'"
+                sys.exit()
 
             counter += 1
 

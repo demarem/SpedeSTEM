@@ -112,10 +112,10 @@ class ProcessStemOut:
             self.resultsFile.write(tree + '; ' + str(numTips) + '; ' +
                     str(sumLike / len(config)) + '; ' + str(len(config)) + '\n')
 
-    def calculateWilik(self):
+    def calculateWilik(self, replicates=1):
         wl = wilik.WiLik("results.txt", "itTable.txt")
         lineCount = wl.countLines(wl.inputName)
-
+        blockSize = lineCount / replicates
         wl.openFiles()
 
         wl.readKLog(blockSize=lineCount)

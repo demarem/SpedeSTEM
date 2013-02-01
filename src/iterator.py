@@ -1,5 +1,5 @@
 import shutil
-import os
+import os, sys
 import chopTree
 import stemUp, stemGroup
 
@@ -26,11 +26,15 @@ class Iterator:
                 'maxTrees must be divisible by numTrees'
 
         # make copy of original settings if necessary or make 'settings' file
-        if settings == 'settings':
-            shutil.copy(settings, settings + '.save')
-            self.masterSettings = settings + '.save'
-        else:
-            shutil.copy(settings, self.currentSettings)
+        try:
+            if settings == 'settings':
+                shutil.copy(settings, settings + '.save')
+                self.masterSettings = settings + '.save'
+            else:
+                shutil.copy(settings, self.currentSettings)
+        except IOError:
+                print "ERROR: Settings file '" + settings + "' not found"
+                sys.exit()
 
         # make sure nothing in masterTreeList is named genetrees.tre
         for i in range(len(self.masterTreeList)):
@@ -38,8 +42,12 @@ class Iterator:
             for j in range(len(trees)):
                 tree = trees[j]
                 if tree == 'genetrees.tre':
-                    shutil.copy(tree, tree + '.save')
-                    self.masterTreeList[i][j] = tree + '.save'
+                    try:
+                        shutil.copy(tree, tree + '.save')
+                        self.masterTreeList[i][j] = tree + '.save'
+                    except IOError:
+                        print "ERROR: Tree file '" + tree + "' not found"
+                        sys.exit()
 
         # remove old stem log if it's present
         if os.path.exists(self.log):
@@ -58,7 +66,11 @@ class Iterator:
 
         # count number of trees if numTrees is None
         if not self.numTrees:
-            treeFile = open(self.masterTreeList[0][0])
+            try:
+                treeFile = open(self.masterTreeList[0][0])
+            except IOError:
+                print "ERROR: Tree File '" + self.masterTreeList[0][0] + "' not found."
+                sys.exit()
             numLines = 0
             for line in treeFile:
                 if line.strip() != '':
@@ -70,12 +82,11 @@ class Iterator:
     def printSettings(self):
         print '--------------------- SETTINGS ----------------------'
         print "In Varification Mode: ", self.isValidation
-        print "Tree File(s): ", self.masterTreeList
+        print "Tree File: ", self.masterTreeList[0][0]
         print "Settings File: ", self.masterSettings
-        if self.isValidation:
-            print "Associations File: ", self.associations
-        print "Number of trees sampled each run: ", self.numTrees
-        print "Number of runs: ", self.numRuns
+        print "Associations File: ", self.associations
+        print "Number of loci sampled each replicate: ", self.numTrees
+        print "Number of replicates: ", self.numRuns
         print "In Verbose Mode: ", self.verbose
         print '-------------------- END SETTINGS --------------------\n'
 
@@ -86,7 +97,7 @@ class Iterator:
         totalRuns = len(treeSizes) * self.numRuns * len(self.masterTreeList)
         for tree in self.masterTreeList:
             for treeSize in treeSizes:
-                print "Sampling %d trees from master tree file %s..." % (treeSize, tree)
+                print "Sampling %d loci from master tree file %s..." % (treeSize, tree[0])
                 chopper = chopTree.ChopTree(tree, maxNumTrees=self.maxTrees, numTrees=treeSize)
                 for run in range(self.numRuns):
                     runCounter += 1
@@ -104,10 +115,14 @@ class Iterator:
 
 
                     # reset the settings file
-                    shutil.copy(self.masterSettings, self.currentSettings)
+                    try:
+                        shutil.copy(self.masterSettings, self.currentSettings)
+                    except IOError:
+                        print "ERROR: Settings file '" + self.masterSettings + "' could not be found"
+                        sys.exit()
 
                     # Print progress
-                    print "\tCompleted %d of %d runs..." % (runCounter, totalRuns)
+                    print "\tCompleted %d of %d replicates..." % (runCounter, totalRuns)
         print '\n+++++++++++++++ All analysis completed! +++++++++++++++\n'
 
 if __name__ == '__main__':

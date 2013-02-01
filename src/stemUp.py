@@ -1,6 +1,7 @@
 import re
 import subprocess
-import stemParse
+import src.stemParse as stemParse
+import sys
 
 def debug(message, verbose):
     if verbose:
@@ -8,9 +9,9 @@ def debug(message, verbose):
 
 class StemUp:
     def __init__(self, jarFile='stem.jar', log='log', settings='settings', verbose=True):
-        self.log = log
         self.jarFile = jarFile
         self.verbose = verbose
+        self.logFile = open(log, 'a')
 
         # parse setting the first time
         self.parser = stemParse.StemParse(settings)
@@ -65,11 +66,18 @@ class StemUp:
         ''' mutates self.speciesToAlleles '''
 
         # call java
-        output = subprocess.check_output(["java", "-jar", self.jarFile])
+        try:
+            output = subprocess.check_output(["java", "-jar", self.jarFile])
+            self.logFile.write(output)
+            debug(output, self.verbose)
+        except subprocess.CalledProcessError, e:
+            print e.output
+            self.logFile.write(e.output)
+            debug(e.output, self.verbose)
+            print "-------STEM ERROR------"
+            print "STEM calculation failed. Last STEM message has been printed above and logged in 'stemOut.txt'"
+            sys.exit()
 
-        outLog = open(self.log, 'a')
-        outLog.write(output)
-        debug(output, self.verbose)
 
         # pass output to parser for new tree and likelihood
         self.parser.parseOutput(output)

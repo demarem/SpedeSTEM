@@ -1,4 +1,4 @@
-import re
+import re, sys
 
 DIVIDER = r'[\t ]+'
 COLUMN_ONE = 'traits'
@@ -21,7 +21,7 @@ class ParseBeast:
             settingsInFile = open(settingsIn, 'r')
             settingsOutFile = open(settingsOut, 'w')
         except IOError:
-            print 'Trouble opening beast formatted trait input and output files.'
+            print 'ERROR: Could not open beast formatted trait input and output files.'
             exit()
 
         self.buildHeader(theta)
@@ -55,6 +55,9 @@ class ParseBeast:
 
         for line in settingsFile:
             splits = re.split(DIVIDER, line)
+            if len(splits) != 2:
+                print "BEAST ERROR: Could not parse Beast formatted settings file"
+                sys.exit()
             species = splits[1].strip()
             if self.speciesToTraits.has_key(species):
                 updatedTraits = self.speciesToTraits[species] + [splits[0].strip()]
@@ -67,6 +70,9 @@ class ParseBeast:
 
         for line in settingsFile:
             splits = re.split(DIVIDER, line)
+            if len(splits) != 3:
+                print "BEAST ERROR: Could not parse Beast formatted settings file"
+                sys.exit()
             species = splits[1].strip()
             group = splits[2].strip()
 
@@ -91,11 +97,17 @@ class ParseBeast:
         header = settingsFile.readline()
         parts = re.split(DIVIDER, header)
 
-        assert parts[0].strip().lower() == COLUMN_ONE, 'First column header must be traits keyword'
-        assert parts[1].strip().lower() == COLUMN_TWO, 'Second column header must be species keyword'
+        if parts[0].strip().lower() != COLUMN_ONE:
+            print 'BEAST ERROR: First column header must be traits keyword'
+            sys.exit()
+        if parts[1].strip().lower() != COLUMN_TWO:
+            print'BEAST ERROR: Second column header must be species keyword'
+            sys.exit()
 
         if len(parts) == 3:
-            assert parts[2].strip().lower() == COLUMN_THREE, 'Third column header must be groups keyword'
+            if parts[2].strip().lower() != COLUMN_THREE:
+                print 'Third column header must be groups keyword'
+                sys.exit()
             return True
         else:
             return False
