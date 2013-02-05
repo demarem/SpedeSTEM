@@ -7,30 +7,31 @@ import re
 
 class randomChooser:
     def __init__(self, inputName, outputName, assocName, commandName, rootAllele=False):
-       self.popToSpec = {}
-       self.popToLines = {}
-       self.header = ""
-       self.footer=""
+        self.popToSpec = {}
+        self.popToLines = {}
+        self.header = ""
+        self.footer = ""
 
-       self.inputName = inputName
-       self.outputName = outputName
-       self.assocName = assocName
+        self.inputName = inputName
+        self.outputName = outputName
+        self.assocName = assocName
 
-       self.inputFile = None
-       self.outputFile = None
-       self.assocFile = None
-       self.commandName = commandName
-    
-       self.rootAlleleLine = ""
-       self.rootAllele = rootAllele
-       self.numPop = 0
-       self.numPerPop = 0
+        self.inputFile = None
+        self.outputFile = None
+        self.assocFile = None
+        self.settingsFile = None
+        self.commandName = commandName
+
+        self.rootAlleleLine = ""
+        self.rootAllele = rootAllele
+        self.numPop = 0
+        self.numPerPop = 0
 
     def openWithCheck(self, filename, flags):
         try:
             return open(name=filename, mode=flags)
         except IOError as e:
-            print "no such file: " + filename 
+            print "no such file: " + filename
             sys.exit()
             return None
 
@@ -38,29 +39,29 @@ class randomChooser:
         # self.openWithCheck(self.inputFile, self.inputName, "r")
         # self.openWithCheck(self.assocFile, self.assocName, "r")
         # self.openWithCheck(self.outputFile, self.outputName, "a")
-        count = 0 
+        count = 0
         fileList = [self.inputName, self.assocName, self.outputName]
         try:
             self.inputFile = open(self.inputName, "r")
-            count+=1
+            count += 1
             self.assocFile = open(self.assocName, "r")
-            count+=1
+            count += 1
             self.outputFile = open(self.outputName, "a")
         except IOError as e:
-            print "no such file: " + fileList[count] 
+            print "no such file: " + fileList[count]
             sys.exit()
 
         if self.commandName:
-            try: 
+            try:
                 self.settingsFile = open(self.commandName)
             except IOError as e:
                 self.settingsFile = None
                 print "no settings file for " + self.inputName
         else:
             self.settingsFile = None
-        
+
         # if self.withSettings:
-        #     try: 
+        #     try:
         #         self.settingsFile = open(self.matchName(self.inputName))
         #     except IOError as e:
         #         self.settingsFile = None
@@ -69,22 +70,23 @@ class randomChooser:
         #     self.settingsFile = None
 
     def reset(self):
-       self.popToSpec = {}
-       self.popToLines = {}
-       self.header = ""
-       self.footer=""
-       self.inputFile.close()
-       self.outputFile.close()
-       self.assocFile.close()
+        self.popToSpec = {}
+        self.popToLines = {}
+        self.header = ""
+        self.footer = ""
+        self.inputFile.close()
+        self.outputFile.close()
+        self.assocFile.close()
 
     def choose_and_remove(self, items):
         # pick an item index
         if items:
-            index = random.randrange( len(items) )
+            index = random.randrange(len(items))
             return items.pop(index)
         # nothing left!
         return None
-    def writeHeader(self, nexus=False, numPerPop=1, root=False):
+
+    def writeHeader(self, nexus=False, numPerPop=1):
         if nexus:
             self.outputFile.write("#NEXUS\n")
         numAlleles = 0
@@ -94,7 +96,7 @@ class randomChooser:
             else:
                 numAlleles += len(self.popToLines[pop])
 
-        # numAlleles = self.numPop * numPerPop 
+        # numAlleles = self.numPop * numPerPop
 
         if self.rootAllele:
             numAlleles += 1
@@ -103,7 +105,7 @@ class randomChooser:
 
     def writeFooter(self, outputFile=None, settingsFile=None):
 
-        outputFile.write(self.footer) 
+        outputFile.write(self.footer)
         outputFile.write("\n")
 
         if settingsFile:
@@ -114,7 +116,7 @@ class randomChooser:
             outputFile.write("\n\n")
 
     def matchName(self, nexusName, nexusExten=".nexus", commandExten=".txt"):
-        return nexusName.replace(nexusExten, commandExten) 
+        return nexusName.replace(nexusExten, commandExten)
 
     def buildPopToLines(self, newInputFile=None):
         if newInputFile:
@@ -122,17 +124,17 @@ class randomChooser:
         else:
             inputFile = self.inputFile
 
-        line = "" 
+        line = ""
         count = 0
-        while count<10000 and line.strip() != "MATRIX":
+        while count < 10000 and line.strip() != "MATRIX":
             line = inputFile.readline()
             if not "NEXUS" in line:
                 self.header += line
-            count+=1
+            count += 1
         if count == 10000:
             print "MATRIX was not found"
             return
-        if self.rootAllele: 
+        if self.rootAllele:
             self.rootAlleleLine = inputFile.readline()
         while line:
             line = inputFile.readline()
@@ -143,21 +145,21 @@ class randomChooser:
                     self.footer += line
                 break
             lineSplits = line.strip().split()
-            if len(lineSplits) >= 2: 
+            if len(lineSplits) >= 2:
                 speciesName = lineSplits[0]
-                speciesAllele = lineSplits[1] 
+                # speciesAllele = lineSplits[1]
             else:
                 speciesName = None
 
             for pop, specList in self.popToSpec.items():
-                if speciesName in specList: 
-                    if pop in self.popToLines: 
-                        self.popToLines[pop].append(line) 
+                if speciesName in specList:
+                    if pop in self.popToLines:
+                        self.popToLines[pop].append(line)
                     else:
-                        self.popToLines[pop] = [line] 
-                     
+                        self.popToLines[pop] = [line]
+
         self.numPop = len(self.popToLines)
-        
+
     def buildPopToSpec(self, newAssocFile=None):
         if newAssocFile:
             assocFile = newAssocFile
@@ -166,27 +168,27 @@ class randomChooser:
 
         for line in assocFile:
             splits = line.strip().split()
-            if len(splits)>=2:
+            if len(splits) >= 2:
                 spec = splits[0]
                 pop = splits[1]
-                if pop in self.popToSpec: 
-                    self.popToSpec[pop].append(spec) 
+                if pop in self.popToSpec:
+                    self.popToSpec[pop].append(spec)
                 else:
-                    self.popToSpec[pop] = [spec] 
+                    self.popToSpec[pop] = [spec]
 
 
-    def randomOutput(self, newOutputFile=None, newSettingsFile=None, numPerPop=1, nexus=False):
+    def randomOutput(self, newOutputFile=None, numPerPop=1, nexus=False):
         if newOutputFile:
-            outputFile = newOutputFile 
+            outputFile = newOutputFile
         else:
             outputFile = self.outputFile
 
         # outputFile.write(self.header)
 
-        self.writeHeader(nexus=nexus, numPerPop = numPerPop)
+        self.writeHeader(nexus=nexus, numPerPop=numPerPop)
 
 
-        self.rootAlleleLine = re.sub("\s+", "   ", self.rootAlleleLine) 
+        self.rootAlleleLine = re.sub("\s+", "   ", self.rootAlleleLine)
         outputFile.write(self.rootAlleleLine + "\n")
 
         for pop in self.popToLines.keys():
@@ -196,19 +198,116 @@ class randomChooser:
                 numRuns = len(self.popToLines[pop])
 
 
-            for a in range(numRuns): 
+            for a in range(numRuns):
                 randomEl = self.choose_and_remove(self.popToLines[pop])
                 lineSplits = randomEl.strip().split()
-                newPopName = pop + "_" + str(a+1)
-                alleleName = lineSplits[1] 
-                outputFile.write(newPopName) 
+                newPopName = pop + "_" + str(a + 1)
+                # alleleName = lineSplits[1]
+                outputFile.write(newPopName)
 
-                for el in lineSplits[1:]: 
-                    outputFile.write("   " + el) 
+                for el in lineSplits[1:]:
+                    outputFile.write("   " + el)
 
-                outputFile.write("\n") 
+                outputFile.write("\n")
 
         self.writeFooter(outputFile, self.settingsFile)
+
+class Sample:
+    def __init__(self, \
+        sampleOutput, sampleInput, \
+        sampleCommand, assoc, \
+        rootallele, numperpop, numrep):
+
+        if sampleInput:
+            self.sampleInput = sampleInput
+        else:
+            self.sampleInput = "data.nexus"
+
+        if sampleOutput:
+            self.sampleOutput = sampleOutput
+        else:
+            self.sampleOutput = "nexus.output"
+
+        if sampleCommand:
+            self.sampleCommand = sampleCommand
+        else:
+            self.sampleCommand = None
+
+        if assoc:
+            self.assocName = assoc
+        else:
+            self.assocName = "assoc.txt"
+
+        self.rootAllele = rootallele
+
+        try:
+            test = open(self.sampleInput, 'r')
+            test.close()
+        except IOError:
+            print "ERROR: Input file '" + self.sampleInput + "' could not be opened."
+            sys.exit()
+
+        try:
+            test = open(self.sampleOutput, 'w')
+            test.close()
+        except IOError:
+            print "ERROR: Output file '" + self.sampleOutput + "' could not be opened."
+            sys.exit()
+
+        try:
+            test = open(self.assocName, 'r')
+            test.close()
+        except IOError:
+            print "ERROR: Associations file '" + self.assocName + "' could not be opened."
+            sys.exit()
+
+        if self.sampleCommand:
+            try:
+                test = open(self.sampleCommand, 'r')
+                test.close()
+            except IOError:
+                print "ERROR: Appended settings file '" + self.sampleCommand + "' could not be opened."
+                sys.exit()
+
+        try:
+            self.numRep = int(numrep)
+        except TypeError:
+            self.numRep = 20
+        try:
+            self.numPerPop = int(numperpop)
+        except TypeError:
+            self.numPerPop = 1
+
+        if sampleInput:
+            if os.path.isdir(sampleInput):
+                self.nexList = glob.glob(sampleInput + "/*.nexus")
+            else:
+                self.nexList = [sampleInput]
+        else:
+            self.nexList = glob.glob("nexus/*.nexus")
+
+    def run (self):
+        if not self.nexList:
+            print "no input files found"
+            sys.exit()
+
+        for nexName in self.nexList:
+            for a in range(self.numRep):
+                nexus = a == 0
+
+                rc = randomChooser(inputName=nexName, \
+                        outputName=self.sampleOutput, assocName=self.assocName, \
+                        commandName=self.sampleCommand, rootAllele=self.rootAllele)
+                rc.openFiles()
+                rc.buildPopToSpec()
+                if not rc.popToSpec:
+                    print "association file is empty"
+                rc.buildPopToLines()
+                if not rc.popToLines:
+                    print "Warning: no species found. Check the input files"
+                    break
+                rc.randomOutput(numPerPop=self.numPerPop, nexus=nexus)
+                rc.reset()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -222,55 +321,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.numperpop:
-        numPerPop = args.numperpop
-    else:
-        numPerPop = 1
-    if args.numrep:
-        numRep = args.numrep
-    else:
-        numRep = 20
-    if args.assoc:
-        assocName = args.assoc
-    else:
-        assocName = "assoc.txt" 
-
-    if args.output:
-        outputName = args.output
-    else:
-        outputName = 'output.nexus' 
-
-    if args.command:
-        commandName = args.command
-    else:
-        commandName = None 
-
-    if args.input:
-        if os.path.isdir(args.input):
-            nexList = glob.glob(args.input + "/*.nexus") 
-        else:
-            nexList = [args.input]
-    else:
-        nexList = glob.glob("nexus/*.nexus") 
-
-    if not nexList:
-        print "no input files found"
-        sys.exit()
-
-    for nexName in nexList:
-        for a in range(numRep):
-            nexus = a==0
-
-            rc = randomChooser(inputName = nexName,\
-                    outputName=outputName, assocName=assocName, \
-                    commandName=commandName, rootAllele=args.rootallele)
-            rc.openFiles()
-            rc.buildPopToSpec()
-            if not rc.popToSpec:
-                print "association file is empty"
-            rc.buildPopToLines()
-            if not rc.popToLines:
-                print "Warning: no species found. Check the input files"
-                break
-            rc.randomOutput(numPerPop=numPerPop, nexus=nexus)
-            rc.reset()
+    sample = Sample(sampleOutput=args.output, sampleInput=args.input, \
+        sampleCommand=args.command, assoc=args.assoc, \
+        rootallele=args.rootallele, numperpop=args.numperpop, numrep=args.numrep)
+    sample.run()

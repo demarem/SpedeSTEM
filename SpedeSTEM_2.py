@@ -1,13 +1,11 @@
 #!/usr/bin/env python -O -t -W all
 
 import argparse
-import sys
-import os
-import shutil
 import src.iterator as iterator
 import src.processStemOut as processStemOut
 import src.parseBeast as parseBeast
 import src.cleanTrees as cleanTrees
+import src.sample as sample
 
 def setupMode(subparsers):
     setup_parser = subparsers.add_parser('setup', help='prepare tree and settings files for analysis')
@@ -50,7 +48,21 @@ def validationMode(subparsers):
     return validation_parser
 
 def subsamplingMode(subparsers):
-    subsampling_parser = subparsers.add_parser('subsampling', help='talk about subsampling')
+    subsampling_parser = subparsers.add_parser('subsampling', help='Subsampling')
+    subsampling_parser.add_argument("-i", "--input", metavar="inputFile",
+                help="input file or directory", nargs=1, required=True)
+    subsampling_parser.add_argument("-o", "--output", metavar="outFile",
+                help="output file", nargs=1, required=True)
+    subsampling_parser.add_argument("-a", "--assoc", metavar="assocFile",
+                help="association file", nargs=1, required=True)
+    subsampling_parser.add_argument("-np", "--numperpop", metavar="numAlleles",
+                help="number of alleles per population", type=int, nargs=1, required=True)
+    subsampling_parser.add_argument("-rp", "--replicates", metavar="numReps",
+                help="number of replicates", type=int, nargs=1, required=True)
+    subsampling_parser.add_argument("-r", "--rootallele",
+                help="always include first allele, DEFAULT: false", action="store_true")
+    subsampling_parser.add_argument("-ap", "--append", metavar="settingsFile",
+                help="append a settings file", nargs=1)
 
     return subsampling_parser
 
@@ -92,7 +104,7 @@ def parseArgs():
     args = parser.parse_args()
 
     # debugging argument parsing
-    # print args
+    print args
 
     # catch invalid option configurations (sanity checks)
     if args.command == 'setup' and args.scalingFile and not args.clean:
@@ -163,6 +175,27 @@ def executeChoice(args):
         processor.rawOutput()
         processor.calculateWilik()
         print "See 'results.txt' and 'itTable.txt' files\n"
+
+
+    elif args.command == 'subsampling':
+        print '\n#################################'
+        print '########## SUBSAMPLING ##########'
+        print '#################################\n'
+
+        append = None
+        if args.append:
+            append = args.append[0]
+
+        sampleRun = sample.Sample(sampleOutput=args.output[0], sampleInput=args.input[0], \
+        sampleCommand=append, assoc=args.assoc[0], \
+        rootallele=args.rootallele, numperpop=args.numperpop[0], numrep=args.replicates[0])
+
+        # process subsampling
+        print "Executing Subsampling..."
+        sampleRun.run()
+        print "File '" + args.output[0] + "' has been created."
+
+
 
     elif args.command == 'testing':
         print '\n#################################'
