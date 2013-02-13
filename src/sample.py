@@ -36,9 +36,6 @@ class randomChooser:
             return None
 
     def openFiles(self):
-        # self.openWithCheck(self.inputFile, self.inputName, "r")
-        # self.openWithCheck(self.assocFile, self.assocName, "r")
-        # self.openWithCheck(self.outputFile, self.outputName, "a")
         count = 0
         fileList = [self.inputName, self.assocName, self.outputName]
         try:
@@ -60,14 +57,6 @@ class randomChooser:
         else:
             self.settingsFile = None
 
-        # if self.withSettings:
-        #     try:
-        #         self.settingsFile = open(self.matchName(self.inputName))
-        #     except IOError as e:
-        #         self.settingsFile = None
-        #         print "no settings file for " + self.inputName
-        # else:
-        #     self.settingsFile = None
 
     def reset(self):
         self.popToSpec = {}
@@ -96,15 +85,19 @@ class randomChooser:
             else:
                 numAlleles += len(self.popToLines[pop])
 
-        # numAlleles = self.numPop * numPerPop
 
         if self.rootAllele:
             numAlleles += 1
+
+        # change NTAX value
         self.header = re.sub(r"NTAX=\d+", "NTAX=" + str(numAlleles), self.header)
+        # remove NEXUS comments
+        self.header = re.sub(r"\[.*?\]", "", self.header)
         self.outputFile.write(self.header)
 
     def writeFooter(self, outputFile=None, settingsFile=None):
-
+        # remove NEXUS comments
+        self.footer = re.sub(r"\[.*?\]", "", self.footer)
         outputFile.write(self.footer)
         outputFile.write("\n")
 
@@ -183,8 +176,6 @@ class randomChooser:
         else:
             outputFile = self.outputFile
 
-        # outputFile.write(self.header)
-
         self.writeHeader(nexus=nexus, numPerPop=numPerPop)
 
 
@@ -202,7 +193,6 @@ class randomChooser:
                 randomEl = self.choose_and_remove(self.popToLines[pop])
                 lineSplits = randomEl.strip().split()
                 newPopName = pop + "_" + str(a + 1)
-                # alleleName = lineSplits[1]
                 outputFile.write(newPopName)
 
                 for el in lineSplits[1:]:
