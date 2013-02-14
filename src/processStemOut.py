@@ -1,6 +1,6 @@
 #!/usr/bin/env python -O -t -W all
 
-import src.wilik as wilik
+import wilik
 
 ''' 
 Parse stem raw output and write either simple ';' delineated, average by
@@ -112,6 +112,31 @@ class ProcessStemOut:
             self.resultsFile.write(tree + '; ' + str(numTips) + '; ' +
                     str(sumLike / len(config)) + '; ' + str(len(config)) + '\n')
 
+    def averageHighestLikelihoodByTips(self):
+        TotalTips = self.runs[0][1]
+
+        # initialize count mapping
+        tips = {}
+        for i in range(1, int(TotalTips) + 1):
+            tips[i] = 0
+
+
+        likelihoods = []
+        totalReps = 0
+        for run in self.runs:
+            likelihoods.insert(0, run[2])
+            if len(likelihoods) >= TotalTips:
+                totalReps += 1
+                largestLikelihood = max(likelihoods)
+                tip = likelihoods.index(largestLikelihood)
+                tips[tip + 1] += 1
+                likelihoods = []
+
+        self.resultsFile.write("K\tOccurrence\n")
+        for tip in tips:
+            self.resultsFile.write(str(tip) + "\t" + str(float(tips[tip]) / totalReps) + '\n')
+
+
     def calculateWilik(self, replicates=1):
         wl = wilik.WiLik("results.txt", "itTable.txt")
         lineCount = wl.countLines(wl.inputName)
@@ -124,5 +149,5 @@ class ProcessStemOut:
         wl.closeFiles()
 
 if __name__ == '__main__':
-    test = ProcessStemOut()
-    test.averageOutputByTrees(None)
+    test = ProcessStemOut(results="occurrenceResults.txt")
+    test.averageHighestLikelihoodByTips()

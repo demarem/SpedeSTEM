@@ -6,6 +6,7 @@ import src.processStemOut as processStemOut
 import src.parseBeast as parseBeast
 import src.cleanTrees as cleanTrees
 import src.sample as sample
+import src.distributeTrees as distributeTrees
 
 def setupMode(subparsers):
     setup_parser = subparsers.add_parser('setup', help='prepare tree and settings files for analysis')
@@ -20,6 +21,8 @@ def setupMode(subparsers):
     setup_parser.add_argument('-bt', '--theta', type=float, metavar="thetaValue",
                               help='set theta value for Beast formatted traits files, DEFAULT: 1.0', nargs=1, \
                               default=[1.0])
+    setup_parser.add_argument('-d', '--distribute', metavar='treeFile', nargs='+', help='create new tree file ' + \
+                              'with one tree from each of the specified files')
 
     return setup_parser
 
@@ -104,13 +107,13 @@ def parseArgs():
     args = parser.parse_args()
 
     # debugging argument parsing
-    print args
+    # print args
 
     # catch invalid option configurations (sanity checks)
     if args.command == 'setup' and args.scalingFile and not args.clean:
         setup_parser.error('Scaling factors specified without tree file, ' + \
                            'add --clean or remove --scalingFile')
-    if args.command == 'setup' and not args.clean and not args.traits:
+    if args.command == 'setup' and not args.clean and not args.traits and not args.distribute:
         setup_parser.error("SpedeSTEM_2 setup: error: No options specified. Try '-h' for help")
     if args.command == 'testing' and args.validation and not args.associations:
         testing_parser.error('Validation mode specified without associations file, ' + \
@@ -137,6 +140,9 @@ def executeChoice(args):
         if args.traits:
             # convert beast formatted traits file to stem settings
             parseBeast.ParseBeast(settingsIn=args.traits[0], theta=args.theta[0])
+
+        if args.distribute:
+            distributeTrees.DistributeTrees(args.distribute)
 
     elif args.command == 'discovery':
         print '\n################################'
@@ -218,6 +224,9 @@ def executeChoice(args):
         processor.rawOutput()
         processor.calculateWilik(args.replicates[0])
         print "See 'results.txt' and 'itTable.txt' files\n"
+
+        occurrences = processStemOut.ProcessStemOut(results="occurrenceResults.txt")
+        occurrences.averageHighestLikelihoodByTips()
 
 def main():
     args = parseArgs()

@@ -65,7 +65,7 @@ class StemUp:
     def doOneStep(self):
         ''' mutates self.speciesToAlleles '''
 
-        # call java
+        # call stem
         try:
             output = subprocess.check_output(["java", "-jar", self.jarFile])
             self.logFile.write(output)
