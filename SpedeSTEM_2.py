@@ -99,8 +99,7 @@ def testingMode(subparsers):
 
 def parseArgs():
     parser = argparse.ArgumentParser(\
-        description='SpedeSTEM 2, a python package for species delimitation.', \
-        epilog='For additional help see [this website]')
+        description='SpedeSTEM 2, a python package for species delimitation.')
 
     subparsers = parser.add_subparsers(help='commands', dest='command')
 

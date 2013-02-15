@@ -23,8 +23,6 @@ class DistributeTrees:
             newTreeFile = open("distributedTree_" + str(counter) + ".tre", 'w')
             destTreeFiles.append(newTreeFile)
 
-
-
             for treeFile in sourceTreeFiles:
                 line = treeFile.readline()
                 if not line:
