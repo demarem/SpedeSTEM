@@ -6,7 +6,7 @@ import stemUp, stemGroup
 class Iterator:
     def __init__(self, masterTreeList, numRuns=5, numTrees=5, maxTrees=20, jarFile='stem-hy.jar',
                  settings='settings.txt', associations='associations.txt', results='results.txt', log='stemOut.txt',
-                 isValidation=False, verbose=False):
+                 isValidation=False, verbose=False, quietWarnings=False):
         self.numRuns = numRuns
         self.numTrees = numTrees
         self.maxTrees = maxTrees
@@ -50,9 +50,9 @@ class Iterator:
                         sys.exit()
 
         # remove old stem log if it's present
-        if os.path.exists(self.log):
+        if os.path.exists(self.log) and not quietWarnings:
             print "\n--------------------- CAUTION -----------------------"
-            print self.log, "is about to be deleted. ", \
+            print "Log file '" + self.log + "' is about to be deleted. ", \
                 "If you would like to preserve it, remove it from this directory."
             choice = raw_input('Are you ready to continue? (y/n): ')
             if choice.strip() != 'y':
@@ -63,6 +63,13 @@ class Iterator:
             except OSError:
                 pass
             print "-----------------------------------------------------\n"
+
+        if os.path.exists(self.log) and quietWarnings:
+            try:
+                os.remove(self.log)
+                print self.log + " was quietly removed.\n"
+            except OSError:
+                pass
 
         # count number of trees if numTrees is None
         if not self.numTrees:

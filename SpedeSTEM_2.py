@@ -34,6 +34,8 @@ def discoveryMode(subparsers):
                                   help='specify settings file in STEM format')
     discovery_parser.add_argument('-v', '--verbose', action="store_true", help='execute in verbose mode, DEFAULT: off',
                                    default=False)
+    discovery_parser.add_argument('-q', '--quiet', action="store_true", help='turn off overwrite errors, DEFAULT: not quiet',
+                                   default=False)
 
     return discovery_parser
 
@@ -47,6 +49,8 @@ def validationMode(subparsers):
                                    help='specify associations file in STEM format')
     validation_parser.add_argument('-v', '--verbose', action="store_true", help='execute in verbose mode, DEFAULT: off'
                                    , default=False)
+    validation_parser.add_argument('-q', '--quiet', action="store_true", help='turn off overwrite errors, DEFAULT: not quiet',
+                                   default=False)
 
     return validation_parser
 
@@ -88,6 +92,8 @@ def testingMode(subparsers):
                                    help='specify associations file in STEM format')
     testing_parser.add_argument('-v', '--verbose', action="store_true", help='execute in verbose mode, DEFAULT: off', \
                                 default=False)
+    testing_parser.add_argument('-q', '--quiet', action="store_true", help='turn off overwrite errors, DEFAULT: not quiet',
+                                   default=False)
 
     return testing_parser
 
@@ -152,7 +158,7 @@ def executeChoice(args):
         # check here for settings file, tree files, maybe scan the files for correct formatting
         discovery = iterator.Iterator([args.tree], numRuns=1, \
                                       numTrees=None, settings=args.settings[0], maxTrees=None, \
-                                      verbose=args.verbose)
+                                      verbose=args.verbose, quietWarnings=args.quiet)
         discovery.printSettings()
         discovery.run()
 
@@ -171,7 +177,7 @@ def executeChoice(args):
         # check for settings, tree files, associations, etc.
         validation = iterator.Iterator([args.tree], numRuns=1, \
                                       numTrees=None, settings=args.settings[0], maxTrees=None, \
-                                      verbose=args.verbose, isValidation=True, associations=args.associations[0])
+                                      verbose=args.verbose, isValidation=True, associations=args.associations[0], quietWarnings=args.quiet)
         validation.printSettings()
         validation.run()
 
@@ -214,7 +220,7 @@ def executeChoice(args):
         # check for settings, tree files, associations, etc.
         validation = iterator.Iterator([args.tree], numRuns=args.replicates[0], \
                                       numTrees=args.loci[0], settings=args.settings[0], maxTrees=args.loci[0], \
-                                      verbose=args.verbose, isValidation=args.validation, associations=associations)
+                                      verbose=args.verbose, isValidation=args.validation, associations=associations, quietWarnings=args.quiet)
         validation.printSettings()
         validation.run()
 
