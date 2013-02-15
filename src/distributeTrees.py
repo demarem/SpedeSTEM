@@ -1,11 +1,17 @@
 import os
 
 class DistributeTrees:
-    def __init__(self, cleanedTreeList, numOutputFiles=None):
-        self.cleanedTreeList = cleanedTreeList
-        self.distributeTrees(numOutputFiles)
+    def __init__(self, cleanedTreeList, numOutputFiles=None, prefix=None):
 
-    def distributeTrees(self, numOutputTrees=None):
+        if prefix == None:
+            prefix = ""
+        else:
+            prefix = prefix + "."
+
+        self.cleanedTreeList = cleanedTreeList
+        self.distributeTrees(prefix, numOutputFiles)
+
+    def distributeTrees(self, prefix, numOutputTrees=None):
         sourceTreeFiles = []
         destTreeFiles = []
 
@@ -16,11 +22,9 @@ class DistributeTrees:
             numOutputTrees = -1
         stillReading = True
 
-        print sourceTreeFiles
-
         counter = 1
         while stillReading and numOutputTrees:
-            newTreeFile = open("distributedTree_" + str(counter) + ".tre", 'w')
+            newTreeFile = open(prefix + "replicateTree_" + str(counter) + ".tre", 'w')
             destTreeFiles.append(newTreeFile)
 
             for treeFile in sourceTreeFiles:

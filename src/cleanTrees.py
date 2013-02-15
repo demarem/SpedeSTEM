@@ -9,10 +9,15 @@ ZEROFINDER = r"(:0.0|:0)(?=[,);])"
 SCINOTATIONFINDER = r"([0-9.]+e[+-][0-9]+)"
 
 class CleanTrees:
-    def __init__(self, treeFileList, prefixes, sigfigs=8):
+    def __init__(self, treeFileList, prefixes, sigfigs=8, prefix=None):
         self.SIGFIGS = sigfigs
         self.treeFileList = treeFileList
         self.ZEROREPLACEMENT = ':0.' + '0' * (self.SIGFIGS - 1) + '1'
+
+        if prefix == None:
+            prefix = ""
+        else:
+            prefix = prefix + "."
 
         # build the list of scaling factor
         if prefixes:
@@ -27,7 +32,7 @@ class CleanTrees:
 
         for tree, scale in zip(treeFileList, self.prefixList):
             # clean all trees and rename cleaned.[old name]
-            self.clean(scale, tree, 'cleaned.' + tree)
+            self.clean(scale, tree, prefix + 'cleaned.' + tree)
 
     def nexusClean(self, scaler, origTree='genetrees.tre', newTree='genetrees.tre'):
         print 'Cleaning Nexus Tree...'

@@ -19,6 +19,9 @@ def setupMode(subparsers):
                               help='provide a text file with each scaling factor on a new line ' + \
                               'in the format: [scalingFactor]. Values prefixed in the order that ' + \
                               'trees appear after the clean command, DEFAULT: [1.0] for each', default=None)
+    setup_parser.add_argument('-p', '--prefix', metavar='filePrefix', nargs=1, \
+                              help="prefix every generated tree with the supplied string " \
+                              "(use only [a-zA-Z_-]), DEFAULT: no prefix")
     setup_parser.add_argument('-t', '--traits', metavar='traitsFile', nargs=1,
                               help='read in traits file as Beast format')
     setup_parser.add_argument('-bt', '--theta', type=float, metavar="thetaValue",
@@ -146,19 +149,23 @@ def executeChoice(args):
         print '####### Performing Setup #######'
         print '################################\n'
 
+        prefix = None
+        if args.prefix:
+            prefix = args.prefix[0]
+
         scalingFile = None
         if args.clean:
             if args.scalingFile:
                 scalingFile = args.scalingFile[0]
             # clean trees and prefix each with scaling factors if file provided
-            cleanTrees.CleanTrees(args.clean, scalingFile, sigfigs=8)
+            cleanTrees.CleanTrees(args.clean, scalingFile, sigfigs=8, prefix=prefix)
 
         if args.traits:
             # convert beast formatted traits file to stem settings
             parseBeast.ParseBeast(settingsIn=args.traits[0], theta=args.theta[0])
 
         if args.distribute:
-            distributeTrees.DistributeTrees(args.distribute)
+            distributeTrees.DistributeTrees(args.distribute, prefix=prefix)
 
     elif args.command == 'discovery':
         print '\n################################'
