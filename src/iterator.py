@@ -89,7 +89,7 @@ class Iterator:
     def printSettings(self):
         print '--------------------- SETTINGS ----------------------'
         print "In Varification Mode: ", self.isValidation
-        print "Tree File: ", self.masterTreeList[0][0]
+        print "Tree File: ", self.masterTreeList
         print "Settings File: ", self.masterSettings
         print "Associations File: ", self.associations
         print "Number of loci sampled each replicate: ", self.numTrees

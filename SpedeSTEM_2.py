@@ -1,6 +1,9 @@
 #!/usr/bin/env python -O -t -W all
 
 import argparse
+import sys
+import os
+import glob
 import src.iterator as iterator
 import src.processStemOut as processStemOut
 import src.parseBeast as parseBeast
@@ -28,8 +31,10 @@ def setupMode(subparsers):
 
 def discoveryMode(subparsers):
     discovery_parser = subparsers.add_parser('discovery', help='discovery analysis')
-    discovery_parser.add_argument('-t', '--tree', metavar='treeFile', nargs=1, required=True, \
+    discovery_parser.add_argument('-t', '--tree', metavar='treeFile', nargs=1, \
                                   help='specify tree file')
+    discovery_parser.add_argument('-d', '--directory', metavar='treeDirectory', nargs=1, \
+                                  help='relative directory of tree files (.tre)')
     discovery_parser.add_argument('-s', '--settings', metavar='settingsFile', nargs=1, required=True, \
                                   help='specify settings file in STEM format')
     discovery_parser.add_argument('-v', '--verbose', action="store_true", help='execute in verbose mode, DEFAULT: off',
@@ -41,8 +46,10 @@ def discoveryMode(subparsers):
 
 def validationMode(subparsers):
     validation_parser = subparsers.add_parser('validation', help='validation analysis')
-    validation_parser.add_argument('-t', '--tree', metavar='treeFile', nargs=1, required=True, \
+    validation_parser.add_argument('-t', '--tree', metavar='treeFile', nargs=1, \
                                   help='specify tree file')
+    validation_parser.add_argument('-d', '--directory', metavar='treeDirectory', nargs=1, \
+                                  help='relative directory of tree files(.tre)')
     validation_parser.add_argument('-s', '--settings', metavar='settingsFile', nargs=1, required=True, \
                                   help='specify settings file in STEM format')
     validation_parser.add_argument('-a', '--associations', metavar='associationsFile', nargs=1, required=True, \
@@ -110,7 +117,6 @@ def parseArgs():
     testing_parser = testingMode(subparsers)
 
     args = parser.parse_args()
-
     # debugging argument parsing
     # print args
 
@@ -126,7 +132,12 @@ def parseArgs():
     if args.command == 'testing' and args.associations and not args.validation:
         testing_parser.error('Associations file specified while in discovery mode, ' + \
                            'change to -val/--validation mode or remove -a/--associations argument')
-
+    if (args.command == 'discovery' or args.command == 'validation') and args.tree and args.directory:
+        testing_parser.error('Specify only one of --tree and --directory, ' + \
+                           'remove either --tree or --directory')
+    if (args.command == 'discovery' or args.command == 'validation') and not args.tree and not args.directory:
+        testing_parser.error('Must specify either --validation or --discovery, ' + \
+                           'add either --tree or --directory')
     return args
 
 def executeChoice(args):
@@ -154,12 +165,30 @@ def executeChoice(args):
         print '###### DISCOVERY ANALYSIS ######'
         print '################################\n'
 
-        # check here for settings file, tree files, maybe scan the files for correct formatting
-        discovery = iterator.Iterator([args.tree], numRuns=1, \
-                                      numTrees=None, settings=args.settings[0], maxTrees=None, \
-                                      verbose=args.verbose, quietWarnings=args.quiet)
-        discovery.printSettings()
-        discovery.run()
+        if args.tree:
+            # check here for settings file, tree files, maybe scan the files for correct formatting
+            discovery = iterator.Iterator([args.tree], numRuns=1, \
+                                          numTrees=None, settings=args.settings[0], maxTrees=None, \
+                                          verbose=args.verbose, quietWarnings=args.quiet)
+            discovery.printSettings()
+            discovery.run()
+
+        elif args.directory:
+            directory = args.directory[0]
+            if not os.path.isdir(directory):
+                print "ERROR: directory '" + directory + "' not found in SpedeSTEM directory.\n"
+                sys.exit()
+
+            print "Reading files from '" + directory + "' directory...\n"
+            treeList = []
+            for tree in glob.glob(directory + "/" + "*.tre"):
+                treeList.append([tree])
+
+            discovery = iterator.Iterator(treeList, numRuns=1, \
+                                          numTrees=None, settings=args.settings[0], maxTrees=None, \
+                                          verbose=args.verbose, quietWarnings=args.quiet)
+            discovery.printSettings()
+            discovery.run()
 
         # process the stem output
         print "Completing Analysis...",
@@ -173,12 +202,31 @@ def executeChoice(args):
         print '###### VALIDATION ANALYSIS ######'
         print '#################################\n'
 
-        # check for settings, tree files, associations, etc.
-        validation = iterator.Iterator([args.tree], numRuns=1, \
-                                      numTrees=None, settings=args.settings[0], maxTrees=None, \
-                                      verbose=args.verbose, isValidation=True, associations=args.associations[0], quietWarnings=args.quiet)
-        validation.printSettings()
-        validation.run()
+        if args.tree:
+            validation = iterator.Iterator([args.tree], numRuns=1, \
+                                          numTrees=None, settings=args.settings[0], maxTrees=None, \
+                                          verbose=args.verbose, isValidation=True, associations=args.associations[0], \
+                                          quietWarnings=args.quiet)
+            validation.printSettings()
+            validation.run()
+        elif args.directory:
+            directory = args.directory[0]
+            if not os.path.isdir(directory):
+                print "ERROR: directory '" + directory + "' not found in SpedeSTEM directory.\n"
+                sys.exit()
+
+            print "Reading files from '" + directory + "' directory...\n"
+            treeList = []
+            for tree in glob.glob(directory + "/" + "*.tre"):
+                treeList.append([tree])
+
+            validation = iterator.Iterator(treeList, numRuns=1, \
+                                          numTrees=None, settings=args.settings[0], maxTrees=None, \
+                                          verbose=args.verbose, isValidation=True, associations=args.associations[0], \
+                                          quietWarnings=args.quiet)
+            validation.printSettings()
+            validation.run()
+
 
         # process the stem output
         print "Completing Analysis...",
