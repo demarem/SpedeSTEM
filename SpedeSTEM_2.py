@@ -1,15 +1,11 @@
 #!/usr/bin/env python -O -t -W all
 
 import argparse
-import sys
-import os
-import glob
-import src.iterator as iterator
-import src.processStemOut as processStemOut
-import src.parseBeast as parseBeast
-import src.cleanTrees as cleanTrees
-import src.sample as sample
-import src.distributeTrees as distributeTrees
+from src.setupCommand import SetupCommand
+from src.discoveryCommand import DiscoveryCommand
+from src.validationCommand import ValidationCommand
+from src.subsamplingCommand import SubsamplingCommand
+from src.testingCommand import TestingCommand
 
 def setupMode(subparsers):
     setup_parser = subparsers.add_parser('setup', help='prepare tree and settings files for analysis')
@@ -120,6 +116,7 @@ def parseArgs():
     testing_parser = testingMode(subparsers)
 
     args = parser.parse_args()
+
     # debugging argument parsing
     # print args
 
@@ -143,155 +140,18 @@ def parseArgs():
                            'add either --tree or --directory')
     return args
 
-def executeChoice(args):
-    if args.command == 'setup':
-        print '\n################################'
-        print '####### Performing Setup #######'
-        print '################################\n'
-
-        prefix = None
-        if args.prefix:
-            prefix = args.prefix[0]
-
-        scalingFile = None
-        if args.clean:
-            if args.scalingFile:
-                scalingFile = args.scalingFile[0]
-            # clean trees and prefix each with scaling factors if file provided
-            cleanTrees.CleanTrees(args.clean, scalingFile, sigfigs=8, prefix=prefix)
-
-        if args.traits:
-            # convert beast formatted traits file to stem settings
-            parseBeast.ParseBeast(settingsIn=args.traits[0], theta=args.theta[0])
-
-        if args.distribute:
-            distributeTrees.DistributeTrees(args.distribute, prefix=prefix)
-
-    elif args.command == 'discovery':
-        print '\n################################'
-        print '###### DISCOVERY ANALYSIS ######'
-        print '################################\n'
-
-        if args.tree:
-            # check here for settings file, tree files, maybe scan the files for correct formatting
-            discovery = iterator.Iterator([args.tree], numRuns=1, \
-                                          numTrees=None, settings=args.settings[0], maxTrees=None, \
-                                          verbose=args.verbose, quietWarnings=args.quiet)
-            discovery.printSettings()
-            discovery.run()
-
-        elif args.directory:
-            directory = args.directory[0]
-            if not os.path.isdir(directory):
-                print "ERROR: directory '" + directory + "' not found in SpedeSTEM directory.\n"
-                sys.exit()
-
-            print "Reading files from '" + directory + "' directory...\n"
-            treeList = []
-            for tree in glob.glob(directory + "/" + "*.tre"):
-                treeList.append([tree])
-
-            discovery = iterator.Iterator(treeList, numRuns=1, \
-                                          numTrees=None, settings=args.settings[0], maxTrees=None, \
-                                          verbose=args.verbose, quietWarnings=args.quiet)
-            discovery.printSettings()
-            discovery.run()
-
-        # process the stem output
-        print "Completing Analysis...",
-        processor = processStemOut.ProcessStemOut()
-        processor.rawOutput()
-        processor.calculateWilik()
-        print "See 'results.txt' and 'itTable.txt' files\n"
-
-    elif args.command == 'validation':
-        print '\n#################################'
-        print '###### VALIDATION ANALYSIS ######'
-        print '#################################\n'
-
-        if args.tree:
-            validation = iterator.Iterator([args.tree], numRuns=1, \
-                                          numTrees=None, settings=args.settings[0], maxTrees=None, \
-                                          verbose=args.verbose, isValidation=True, associations=args.associations[0], \
-                                          quietWarnings=args.quiet)
-            validation.printSettings()
-            validation.run()
-        elif args.directory:
-            directory = args.directory[0]
-            if not os.path.isdir(directory):
-                print "ERROR: directory '" + directory + "' not found in SpedeSTEM directory.\n"
-                sys.exit()
-
-            print "Reading files from '" + directory + "' directory...\n"
-            treeList = []
-            for tree in glob.glob(directory + "/" + "*.tre"):
-                treeList.append([tree])
-
-            validation = iterator.Iterator(treeList, numRuns=1, \
-                                          numTrees=None, settings=args.settings[0], maxTrees=None, \
-                                          verbose=args.verbose, isValidation=True, associations=args.associations[0], \
-                                          quietWarnings=args.quiet)
-            validation.printSettings()
-            validation.run()
-
-
-        # process the stem output
-        print "Completing Analysis...",
-        processor = processStemOut.ProcessStemOut()
-        processor.rawOutput()
-        processor.calculateWilik()
-        print "See 'results.txt' and 'itTable.txt' files\n"
-
-
-    elif args.command == 'subsampling':
-        print '\n#################################'
-        print '########## SUBSAMPLING ##########'
-        print '#################################\n'
-
-        append = None
-        if args.append:
-            append = args.append[0]
-
-        sampleRun = sample.Sample(sampleOutput=args.output[0], sampleInput=args.input[0], \
-        sampleCommand=append, assoc=args.assoc[0], \
-        rootallele=args.rootallele, numperpop=args.numperpop[0], numrep=args.replicates[0])
-
-        # process subsampling
-        print "Executing Subsampling..."
-        sampleRun.run()
-        print "File '" + args.output[0] + "' has been created."
-
-
-
-    elif args.command == 'testing':
-        print '\n#################################'
-        print '######### POWER TESTING #########'
-        print '#################################\n'
-
-        associations = ""
-        if args.associations:
-            associations = args.associations[0]
-        # check for settings, tree files, associations, etc.
-        validation = iterator.Iterator([args.tree], numRuns=args.replicates[0], \
-                                      numTrees=args.loci[0], settings=args.settings[0], maxTrees=args.loci[0], \
-                                      verbose=args.verbose, isValidation=args.validation, associations=associations, quietWarnings=args.quiet)
-        validation.printSettings()
-        validation.run()
-
-        # process the stem output
-        print "Completing Analysis...",
-        processor = processStemOut.ProcessStemOut()
-        processor.rawOutput()
-        processor.calculateWilik(args.replicates[0])
-        print "See 'results.txt' and 'itTable.txt' files\n"
-
-        occurrences = processStemOut.ProcessStemOut(results="occurrenceResults.txt")
-        occurrences.averageHighestLikelihoodByTips()
-
 def main():
-    args = parseArgs()
-    executeChoice(args)
+    setup = SetupCommand()
+    discover = DiscoveryCommand()
+    validate = ValidationCommand()
+    subsample = SubsamplingCommand()
+    test = TestingCommand()
 
+    commands = {'setup': setup, 'discovery': discover, 'validation': validate,
+                'subsampling': subsample, 'testing': test}
+
+    args = parseArgs()
+    commands[args.command].execute(args)
 
 if __name__ == '__main__':
     main()

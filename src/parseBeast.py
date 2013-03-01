@@ -69,7 +69,7 @@ class ParseBeast:
         '''alters: self.speciesToTraits, format of file is "COL_ONE    COL_TWO    COL_THREE" '''
 
         for line in settingsFile:
-            splits = re.split(DIVIDER, line)
+            splits = re.split(DIVIDER, line.strip())
             if len(splits) != 3:
                 print "BEAST ERROR: Could not parse Beast formatted settings file"
                 sys.exit()
