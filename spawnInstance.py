@@ -57,8 +57,9 @@ def generateChild(ID, files):
         os.symlink(stemLoc, STEM)
         os.symlink(srcLoc, SRC)
 
-    except Exception:
+    except Exception, e:
         cleanup(tempDir, origDir)
+        print e
         print "Error creating temporary directory"
         exit()
 
@@ -69,10 +70,20 @@ def captureSpede(spedeArgs, paths):
     spedeArgs = call + spedeArgs
     subprocess.call(spedeArgs)
 
+    command = spedeArgs[2]
+    # determine the types to save in zip file
+    toSave = ["*.txt"]
+    if command == "setup":
+        toSave = ["*.tre", "*.stem"]
+    elif command == "subsampling":
+        toSave = ["*.n*"]
+
     zf = zipfile.ZipFile(TEMPZIP, mode='w')
     try:
-        for f in glob.glob("*.txt"):
-            zf.write(f)
+        for s in toSave:
+            for f in glob.glob(s):
+                print f
+                zf.write(f)
     finally:
         zf.close()
         os.rename(TEMPZIP, paths["zipLoc"])
