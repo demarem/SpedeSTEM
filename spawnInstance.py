@@ -82,7 +82,6 @@ def captureSpede(spedeArgs, paths):
     try:
         for s in toSave:
             for f in glob.glob(s):
-                print f
                 zf.write(f)
     finally:
         zf.close()

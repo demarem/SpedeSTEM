@@ -49,7 +49,11 @@ class ProcessStemOut:
 
             elif "log likelihood for tree: " in line.strip():
                 likelihood = float(line.split(": ")[1].strip())
-                assert likelihood < 0, 'Found a positive log likelihood'
+                # assert likelihood < 0, 'Found a positive log likelihood'
+                if likelihood >= 0:
+                    likelihood = -9876543210
+                    print "WARNING: Found positive log likelihood value, that tree " + \
+                        "will not be considered in results."
 
         return (tree, numTips, likelihood)
 
