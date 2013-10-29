@@ -39,9 +39,9 @@ class randomChooser:
         count = 0
         fileList = [self.inputName, self.assocName, self.outputName]
         try:
-            self.inputFile = open(self.inputName, "r")
+            self.inputFile = open(self.inputName, "rU")
             count += 1
-            self.assocFile = open(self.assocName, "r")
+            self.assocFile = open(self.assocName, "rU")
             count += 1
             self.outputFile = open(self.outputName, "a")
         except IOError as e:
