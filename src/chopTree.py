@@ -8,7 +8,7 @@ class ChopTree:
         self.origTreeFiles = []
         for f in origFilenames:
             try:
-                self.origTreeFiles.append(open(f, 'r'))
+                self.origTreeFiles.append(open(f, 'rU'))
             except IOError:
                 print "ERROR: Could not open tree file '" + f + "'"
                 sys.exit()

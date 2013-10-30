@@ -72,9 +72,9 @@ class CleanTrees:
         try:
             if origTree == 'genetree.tree':
                 shutil.copyfile(origTree, origTree + '.orig')
-                origTreeFile = open(origTree + '.orig', 'r')
+                origTreeFile = open(origTree + '.orig', 'rU')
             else:
-                origTreeFile = open(origTree, 'r')
+                origTreeFile = open(origTree, 'rU')
             newTreeFile = open(newTree, 'w')
 
             return origTreeFile, newTreeFile
@@ -91,7 +91,7 @@ class CleanTrees:
 
     def clean(self, scaler, origTree='genetrees.tre', newTree='genetrees.tre'):
         try:
-            origTreeFile = open(origTree, 'r')
+            origTreeFile = open(origTree, 'rU')
             line = origTreeFile.readline().strip()
             origTreeFile.close()
         except IOError:
